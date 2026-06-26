@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctors - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html" class="active">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Doctor Directory</h1>
+    <p class="page-subtitle">Find trusted doctors across Bangladesh</p>
+
+    <div class="search-section">
+      <div class="search-row">
+        <div class="search-group" style="flex:2">
+          <label>Search Doctors</label>
+          <input type="text" id="search-input" placeholder="Search by name, hospital, or specialty...">
+        </div>
+        <div class="search-group">
+          <label>Location</label>
+          <select id="location-filter">
+            <option value="all">All Locations</option>
+          </select>
+        </div>
+        <div class="search-group">
+          <label>Specialty</label>
+          <select id="specialty-filter">
+            <option value="all">All Specialties</option>
+          </select>
+        </div>
+        <div class="search-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="searchDoctors()">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="doctors-grid" class="grid grid-2">
+      <p class="loading">Loading doctors...</p>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Doctor Detail Modal -->
+  <div class="modal-overlay hidden" id="doctor-modal">
+    <div class="modal" style="max-width:640px">
+      <div id="doctor-detail"></div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay hidden" id="review-modal">
+    <div class="modal">
+      <h2>Write a Review</h2>
+      <div id="review-alert"></div>
+      <div class="form-group">
+        <label>Rating</label>
+        <div class="star-input" id="star-input">
+          <span data-val="1" onclick="setRating(1)">☆</span>
+          <span data-val="2" onclick="setRating(2)">☆</span>
+          <span data-val="3" onclick="setRating(3)">☆</span>
+          <span data-val="4" onclick="setRating(4)">☆</span>
+          <span data-val="5" onclick="setRating(5)">☆</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Comment (optional)</label>
+        <textarea id="review-comment" placeholder="Share your experience..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentPage = 1;
+    let selectedRating = 0;
+    let reviewDoctorId = null;
+
+    async function loadFilters() {
+      try {
+        const [locData, specData] = await Promise.all([
+          apiFetch('/api/doctors/locations'),
+          apiFetch('/api/doctors/specialties')
+        ]);
+
+        const locSelect = document.getElementById('location-filter');
+        locData.locations.forEach(loc => {
+          const opt = document.createElement('option');
+          opt.value = loc; opt.textContent = loc;
+          locSelect.appendChild(opt);
+        });
+
+        const specSelect = document.getElementById('specialty-filter');
+        specData.specialties.forEach(spec => {
+          const opt = document.createElement('option');
+          opt.value = spec; opt.textContent = spec;
+          specSelect.appendChild(opt);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadDoctors(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search-input').value;
+      const location = document.getElementById('location-filter').value;
+      const specialty = document.getElementById('specialty-filter').value;
+      const grid = document.getElementById('doctors-grid');
+
+      grid.innerHTML = '<p class="loading">Loading...</p>';
+
+      try {
+        const params = new URLSearchParams({ page, limit: 12 });
+        if (search) params.set('search', search);
+        if (location !== 'all') params.set('location', location);
+        if (specialty !== 'all') params.set('specialty', specialty);
+
+        const data = await apiFetch(`/api/doctors?${params}`);
+
+        if (data.doctors.length === 0) {
+          grid.innerHTML = '<div class="empty-state"><div class="icon">👨‍⚕️</div><p>No doctors found. Try a different search.</p></div>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = data.doctors.map(d => `
+          <div class="card doctor-card">
+            <div class="doctor-info">
+              <div class="doctor-avatar">${d.name.charAt(0)}</div>
+              <div class="doctor-details">
+                <h3>${d.name}</h3>
+                <span class="category-badge" style="font-size:0.75rem">${d.specialty}</span>
+                <div class="doctor-meta">
+                  <span>🏥 ${d.hospital}</span>
+                  <span>📍 ${d.location}</span>
+                  <span>📞 ${d.contact}</span>
+                </div>
+                <div class="doctor-rating">
+                  <span class="stars">${renderStars(d.rating)}</span>
+                  <span style="font-size:0.8rem;color:var(--text-light)">(${d.review_count} reviews)</span>
+                </div>
+              </div>
+            </div>
+            <div class="doctor-actions">
+              <button class="btn btn-sm btn-secondary" onclick="showDoctor(${d.id})">View Details</button>
+              ${isLoggedIn() ? `
+                <button class="fav-btn" id="fav-${d.id}" onclick="toggleFavorite(${d.id})" title="Add to favorites">♡</button>
+                <button class="btn btn-sm btn-secondary" onclick="openReviewModal(${d.id})">Rate</button>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        if (isLoggedIn()) {
+          data.doctors.forEach(d => checkFavorite(d.id));
+        }
+
+        renderPagination(document.getElementById('pagination'), data.page, data.totalPages, loadDoctors);
+      } catch (err) {
+        grid.innerHTML = '<div class="empty-state"><p>Failed to load doctors.</p></div>';
+      }
+    }
+
+    function searchDoctors() { loadDoctors(1); }
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchDoctors();
+    });
+
+    async function showDoctor(id) {
+      try {
+        const [docData, revData] = await Promise.all([
+          apiFetch(`/api/doctors/${id}`),
+          apiFetch(`/api/reviews/${id}`)
+        ]);
+        const d = docData.doctor;
+        const reviews = revData.reviews;
+
+        document.getElementById('doctor-detail').innerHTML = `
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+            <div class="doctor-avatar" style="width:72px;height:72px;font-size:1.75rem">${d.name.charAt(0)}</div>
+            <div>
+              <h2 style="font-size:1.3rem;margin-bottom:0.25rem">${d.name}</h2>
+              <span class="category-badge">${d.specialty}</span>
+              <div class="doctor-rating" style="margin-top:0.5rem">
+                <span class="stars">${renderStars(d.rating)}</span>
+                <span style="font-size:0.85rem;color:var(--text-light)">${d.rating.toFixed(1)} (${d.review_count} reviews)</span>
+              </div>
+            </div>
+          </div>
+          <div class="detail-section">
+            <h3>🏥 Hospital / Clinic</h3>
+            <p>${d.hospital}</p>
+          </div>
+          <div class="detail-section">
+            <h3>📍 Location</h3>
+            <p>${d.location}</p>
+          </div>
+          <div class="detail-section">
+            <h3>📞 Contact</h3>
+            <p>${d.contact}${d.email ? ' | ' + d.email : ''}</p>
+          </div>
+          ${reviews.length > 0 ? `
+            <div class="detail-section">
+              <h3>⭐ Patient Reviews</h3>
+              <div style="max-height:300px;overflow-y:auto">
+                ${reviews.map(r => `
+                  <div class="review-card">
+                    <div class="review-header">
+                      <strong>${r.user_name}</strong>
+                      <span class="review-date">${formatDate(r.created_at)}</span>
+                    </div>
+                    <div class="stars" style="margin-bottom:0.25rem">${renderStars(r.rating)}</div>
+                    ${r.comment ? `<p class="review-text">${r.comment}</p>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : '<p style="color:var(--text-light);margin-top:1rem">No reviews yet.</p>'}
+          <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeDoctorModal()">Close</button>
+            ${isLoggedIn() ? `<button class="btn btn-primary" onclick="closeDoctorModal();openReviewModal(${d.id})">Write Review</button>` : ''}
+          </div>
+        `;
+        document.getElementById('doctor-modal').classList.remove('hidden');
+      } catch (err) {
+        alert('Failed to load doctor details.');
+      }
+    }
+
+    function closeDoctorModal() {
+      document.getElementById('doctor-modal').classList.add('hidden');
+    }
+
+    document.getElementById('doctor-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeDoctorModal();
+    });
+
+    async function toggleFavorite(doctorId) {
+      if (!isLoggedIn()) { window.location.href = '/login.html'; return; }
+      const btn = document.getElementById(`fav-${doctorId}`);
+      try {
+        if (btn.classList.contains('active')) {
+          await apiFetch(`/api/favorites/${doctorId}`, { method: 'DELETE' });
+          btn.classList.remove('active');
+          btn.textContent = '♡';
+        } else {
+          await apiFetch(`/api/favorites/${doctorId}`, { method: 'POST' });
+          btn.classList.add('active');
+          btn.textContent = '♥';
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function checkFavorite(doctorId) {
+      try {
+        const data = await apiFetch(`/api/favorites/check/${doctorId}`);
+        const btn = document.getElementById(`fav-${doctorId}`);
+        if (btn && data.isFavorite) {
+          btn.classList.add('active');
+          btn.textContent = '♥';
+        }
+      } catch (e) {}
+    }
+
+    function openReviewModal(doctorId) {
+      if (!isLoggedIn()) { window.location.href = '/login.html'; return; }
+      reviewDoctorId = doctorId;
+      selectedRating = 0;
+      document.querySelectorAll('#star-input span').forEach(s => { s.textContent = '☆'; s.classList.remove('active'); });
+      document.getElementById('review-comment').value = '';
+      document.getElementById('review-modal').classList.remove('hidden');
+    }
+
+    function closeReviewModal() {
+      document.getElementById('review-modal').classList.add('hidden');
+    }
+
+    document.getElementById('review-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeReviewModal();
+    });
+
+    function setRating(val) {
+      selectedRating = val;
+      document.querySelectorAll('#star-input span').forEach(s => {
+        const v = parseInt(s.dataset.val);
+        s.textContent = v <= val ? '★' : '☆';
+        s.classList.toggle('active', v <= val);
+      });
+    }
+
+    async function submitReview() {
+      if (selectedRating === 0) {
+        showAlert(document.getElementById('review-alert'), 'Please select a rating.');
+        return;
+      }
+
+      try {
+        await apiFetch(`/api/reviews/${reviewDoctorId}`, {
+          method: 'POST',
+          body: JSON.stringify({ rating: selectedRating, comment: document.getElementById('review-comment').value })
+        });
+        closeReviewModal();
+        loadDoctors(currentPage);
+      } catch (err) {
+        showAlert(document.getElementById('review-alert'), err.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFilters();
+      loadDoctors();
+    });
+  </script>
+</body>
+</html>

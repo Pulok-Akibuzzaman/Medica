@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link"><a href="admin.html" class="active">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links" class="hidden">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Admin Panel</h1>
+    <p class="page-subtitle">Manage medicines and doctors</p>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('medicines')">💊 Medicines</button>
+      <button class="admin-tab" onclick="switchTab('doctors')">👨‍⚕️ Doctors</button>
+      <button class="admin-tab" onclick="switchTab('diseases')">🦠 Diseases</button>
+      <button class="admin-tab" onclick="switchTab('guidelines')">📘 Guidelines</button>
+      <button class="admin-tab" onclick="switchTab('investigations')">🔬 Investigations</button>
+    </div>
+
+    <!-- Medicines Tab -->
+    <div id="medicines-tab">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="med-count" style="color:var(--text-light)"></span>
+        <button class="btn btn-primary" onclick="openMedicineForm()">+ Add Medicine</button>
+      </div>
+      <div id="alert-med"></div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Generic Name</th>
+              <th>Category</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="medicines-tbody">
+            <tr><td colspan="4" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="med-pagination"></div>
+    </div>
+
+    <!-- Doctors Tab -->
+    <div id="doctors-tab" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="doc-count" style="color:var(--text-light)"></span>
+        <button class="btn btn-primary" onclick="openDoctorForm()">+ Add Doctor</button>
+      </div>
+      <div id="alert-doc"></div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Specialty</th>
+              <th>Location</th>
+              <th>Hospital</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="doctors-tbody">
+            <tr><td colspan="5" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="doc-pagination"></div>
+    </div>
+
+    <!-- Diseases Tab -->
+    <div id="diseases-tab" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="dis-count" style="color:var(--text-light)"></span>
+        <button class="btn btn-primary" onclick="openDiseaseForm()">+ Add Disease</button>
+      </div>
+      <div id="alert-dis"></div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Category</th><th>Specialties</th><th>Actions</th></tr></thead>
+          <tbody id="diseases-tbody"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="dis-pagination"></div>
+    </div>
+
+    <!-- Guidelines Tab -->
+    <div id="guidelines-tab" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="guide-count" style="color:var(--text-light)"></span>
+        <button class="btn btn-primary" onclick="openGuidelineForm()">+ Add Guideline</button>
+      </div>
+      <div id="alert-guide"></div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead><tr><th>Title</th><th>Type</th><th>Authority</th><th>Category</th><th>Actions</th></tr></thead>
+          <tbody id="guidelines-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="guide-pagination"></div>
+    </div>
+
+    <!-- Investigations Tab -->
+    <div id="investigations-tab" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="inv-count" style="color:var(--text-light)"></span>
+        <button class="btn btn-primary" onclick="openInvestigationForm()">+ Add Center</button>
+      </div>
+      <div id="alert-inv"></div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Location</th><th>Tests</th><th>Actions</th></tr></thead>
+          <tbody id="investigations-tbody"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="inv-pagination"></div>
+    </div>
+  </div>
+
+  <!-- Disease Form Modal -->
+  <div class="modal-overlay hidden" id="disease-modal">
+    <div class="modal">
+      <h2 id="dis-form-title">Add Disease</h2>
+      <form id="disease-form">
+        <input type="hidden" id="dis-id">
+        <div class="form-group"><label>Disease Name</label><input type="text" id="dis-name" required></div>
+        <div class="form-group"><label>Category</label><input type="text" id="dis-category" placeholder="e.g., Infectious, Chronic, Mental Health"></div>
+        <div class="form-group"><label>Related Specialties (comma-separated)</label><input type="text" id="dis-specialties" placeholder="e.g., Cardiology, Neurology"></div>
+        <div class="form-group"><label>Overview</label><textarea id="dis-overview" required></textarea></div>
+        <div class="form-group"><label>Causes</label><textarea id="dis-causes" required></textarea></div>
+        <div class="form-group"><label>Symptoms</label><textarea id="dis-symptoms" required></textarea></div>
+        <div class="form-group"><label>Risk Factors</label><textarea id="dis-risk" required></textarea></div>
+        <div class="form-group"><label>Diagnosis</label><textarea id="dis-diagnosis" required></textarea></div>
+        <div class="form-group"><label>Treatment</label><textarea id="dis-treatment" required></textarea></div>
+        <div class="form-group"><label>Prevention</label><textarea id="dis-prevention" required></textarea></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDiseaseForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Guideline Form Modal -->
+  <div class="modal-overlay hidden" id="guideline-modal">
+    <div class="modal">
+      <h2 id="guide-form-title">Add Guideline</h2>
+      <form id="guideline-form">
+        <input type="hidden" id="guide-id">
+        <div class="form-group"><label>Title</label><input type="text" id="guide-title" required></div>
+        <div class="form-group"><label>Type</label>
+          <select id="guide-type"><option value="national">National</option><option value="international">International</option></select>
+        </div>
+        <div class="form-group"><label>Category</label><input type="text" id="guide-category" placeholder="e.g., Cardiology, Pediatrics"></div>
+        <div class="form-group"><label>Issuing Authority</label><input type="text" id="guide-authority" required placeholder="e.g., DGHS Bangladesh, WHO"></div>
+        <div class="form-group"><label>Publication Date</label><input type="date" id="guide-date"></div>
+        <div class="form-group"><label>Description / Summary</label><textarea id="guide-desc" required></textarea></div>
+        <div class="form-group"><label>Link (URL)</label><input type="url" id="guide-link" placeholder="https://..."></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeGuidelineForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Investigation Form Modal -->
+  <div class="modal-overlay hidden" id="investigation-modal">
+    <div class="modal">
+      <h2 id="inv-form-title">Add Investigation Center</h2>
+      <form id="investigation-form">
+        <input type="hidden" id="inv-id">
+        <div class="form-group"><label>Center Name</label><input type="text" id="inv-name" required></div>
+        <div class="form-group"><label>Location (City)</label><input type="text" id="inv-location" required placeholder="e.g., Dhaka"></div>
+        <div class="form-group"><label>Full Address</label><input type="text" id="inv-address" required></div>
+        <div class="form-group"><label>Available Tests (comma-separated)</label><textarea id="inv-tests" required placeholder="Blood Test, X-Ray, MRI, CT Scan..."></textarea></div>
+        <div class="form-group"><label>Contact Number</label><input type="text" id="inv-contact" required></div>
+        <div class="form-group"><label>Opening Hours</label><input type="text" id="inv-hours" required placeholder="e.g., Sat-Thu 8:00 AM - 10:00 PM"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeInvestigationForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Medicine Form Modal -->
+  <div class="modal-overlay hidden" id="medicine-modal">
+    <div class="modal">
+      <h2 id="med-form-title">Add Medicine</h2>
+      <form id="medicine-form">
+        <input type="hidden" id="med-id">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="med-name" required>
+        </div>
+        <div class="form-group">
+          <label>Generic Name</label>
+          <input type="text" id="med-generic" required>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" id="med-category" placeholder="e.g., Pain Relief, Antibiotic">
+        </div>
+        <div class="form-group">
+          <label>Uses</label>
+          <textarea id="med-uses" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Dosage</label>
+          <textarea id="med-dosage" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Side Effects</label>
+          <textarea id="med-side-effects" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Warnings</label>
+          <textarea id="med-warnings" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeMedicineForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Doctor Form Modal -->
+  <div class="modal-overlay hidden" id="doctor-modal">
+    <div class="modal">
+      <h2 id="doc-form-title">Add Doctor</h2>
+      <form id="doctor-form">
+        <input type="hidden" id="doc-id">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="doc-name" required>
+        </div>
+        <div class="form-group">
+          <label>Hospital / Clinic</label>
+          <input type="text" id="doc-hospital" required>
+        </div>
+        <div class="form-group">
+          <label>Specialty</label>
+          <input type="text" id="doc-specialty" required placeholder="e.g., Cardiology, Neurology">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="doc-location" required placeholder="e.g., Dhaka, Chittagong">
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="text" id="doc-contact" required>
+        </div>
+        <div class="form-group">
+          <label>Email (optional)</label>
+          <input type="email" id="doc-email">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDoctorForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!isLoggedIn() || !isAdmin()) {
+      window.location.href = '/login.html';
+    }
+
+    let medPage = 1, docPage = 1;
+
+    const allTabs = ['medicines', 'doctors', 'diseases', 'guidelines', 'investigations'];
+    function switchTab(tab) {
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      allTabs.forEach(t => document.getElementById(t + '-tab').classList.toggle('hidden', t !== tab));
+      event.target.classList.add('active');
+    }
+
+    // ── Medicines ──
+    async function loadAdminMedicines(page = 1) {
+      medPage = page;
+      try {
+        const data = await apiFetch(`/api/medicines?page=${page}&limit=15`);
+        document.getElementById('med-count').textContent = `${data.total} medicines total`;
+        const tbody = document.getElementById('medicines-tbody');
+
+        if (data.medicines.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No medicines found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.medicines.map(m => `
+          <tr>
+            <td><strong>${m.name}</strong></td>
+            <td>${m.generic_name}</td>
+            <td>${m.category}</td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick="editMedicine(${m.id})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteMedicine(${m.id}, '${m.name.replace(/'/g, "\\'")}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+
+        renderPagination(document.getElementById('med-pagination'), data.page, data.totalPages, loadAdminMedicines);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function openMedicineForm(data = null) {
+      document.getElementById('med-form-title').textContent = data ? 'Edit Medicine' : 'Add Medicine';
+      document.getElementById('med-id').value = data ? data.id : '';
+      document.getElementById('med-name').value = data ? data.name : '';
+      document.getElementById('med-generic').value = data ? data.generic_name : '';
+      document.getElementById('med-category').value = data ? data.category : '';
+      document.getElementById('med-uses').value = data ? data.uses : '';
+      document.getElementById('med-dosage').value = data ? data.dosage : '';
+      document.getElementById('med-side-effects').value = data ? data.side_effects : '';
+      document.getElementById('med-warnings').value = data ? data.warnings : '';
+      document.getElementById('medicine-modal').classList.remove('hidden');
+    }
+
+    function closeMedicineForm() {
+      document.getElementById('medicine-modal').classList.add('hidden');
+    }
+
+    async function editMedicine(id) {
+      try {
+        const data = await apiFetch(`/api/medicines/${id}`);
+        openMedicineForm(data.medicine);
+      } catch (err) { alert('Failed to load medicine.'); }
+    }
+
+    document.getElementById('medicine-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('med-id').value;
+      const body = {
+        name: document.getElementById('med-name').value,
+        generic_name: document.getElementById('med-generic').value,
+        category: document.getElementById('med-category').value,
+        uses: document.getElementById('med-uses').value,
+        dosage: document.getElementById('med-dosage').value,
+        side_effects: document.getElementById('med-side-effects').value,
+        warnings: document.getElementById('med-warnings').value
+      };
+
+      try {
+        if (id) {
+          await apiFetch(`/api/medicines/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+          showAlert(document.getElementById('alert-med'), 'Medicine updated!', 'success');
+        } else {
+          await apiFetch('/api/medicines', { method: 'POST', body: JSON.stringify(body) });
+          showAlert(document.getElementById('alert-med'), 'Medicine added!', 'success');
+        }
+        closeMedicineForm();
+        loadAdminMedicines(medPage);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteMedicine(id, name) {
+      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      try {
+        await apiFetch(`/api/medicines/${id}`, { method: 'DELETE' });
+        showAlert(document.getElementById('alert-med'), 'Medicine deleted.', 'success');
+        loadAdminMedicines(medPage);
+      } catch (err) { alert(err.message); }
+    }
+
+    // ── Doctors ──
+    async function loadAdminDoctors(page = 1) {
+      docPage = page;
+      try {
+        const data = await apiFetch(`/api/doctors?page=${page}&limit=15`);
+        document.getElementById('doc-count').textContent = `${data.total} doctors total`;
+        const tbody = document.getElementById('doctors-tbody');
+
+        if (data.doctors.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">No doctors found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.doctors.map(d => `
+          <tr>
+            <td><strong>${d.name}</strong></td>
+            <td>${d.specialty}</td>
+            <td>${d.location}</td>
+            <td>${d.hospital}</td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick="editDoctor(${d.id})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteDoctor(${d.id}, '${d.name.replace(/'/g, "\\'")}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+
+        renderPagination(document.getElementById('doc-pagination'), data.page, data.totalPages, loadAdminDoctors);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function openDoctorForm(data = null) {
+      document.getElementById('doc-form-title').textContent = data ? 'Edit Doctor' : 'Add Doctor';
+      document.getElementById('doc-id').value = data ? data.id : '';
+      document.getElementById('doc-name').value = data ? data.name : '';
+      document.getElementById('doc-hospital').value = data ? data.hospital : '';
+      document.getElementById('doc-specialty').value = data ? data.specialty : '';
+      document.getElementById('doc-location').value = data ? data.location : '';
+      document.getElementById('doc-contact').value = data ? data.contact : '';
+      document.getElementById('doc-email').value = data ? data.email || '' : '';
+      document.getElementById('doctor-modal').classList.remove('hidden');
+    }
+
+    function closeDoctorForm() {
+      document.getElementById('doctor-modal').classList.add('hidden');
+    }
+
+    async function editDoctor(id) {
+      try {
+        const data = await apiFetch(`/api/doctors/${id}`);
+        openDoctorForm(data.doctor);
+      } catch (err) { alert('Failed to load doctor.'); }
+    }
+
+    document.getElementById('doctor-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('doc-id').value;
+      const body = {
+        name: document.getElementById('doc-name').value,
+        hospital: document.getElementById('doc-hospital').value,
+        specialty: document.getElementById('doc-specialty').value,
+        location: document.getElementById('doc-location').value,
+        contact: document.getElementById('doc-contact').value,
+        email: document.getElementById('doc-email').value
+      };
+
+      try {
+        if (id) {
+          await apiFetch(`/api/doctors/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+          showAlert(document.getElementById('alert-doc'), 'Doctor updated!', 'success');
+        } else {
+          await apiFetch('/api/doctors', { method: 'POST', body: JSON.stringify(body) });
+          showAlert(document.getElementById('alert-doc'), 'Doctor added!', 'success');
+        }
+        closeDoctorForm();
+        loadAdminDoctors(docPage);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteDoctor(id, name) {
+      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      try {
+        await apiFetch(`/api/doctors/${id}`, { method: 'DELETE' });
+        showAlert(document.getElementById('alert-doc'), 'Doctor deleted.', 'success');
+        loadAdminDoctors(docPage);
+      } catch (err) { alert(err.message); }
+    }
+
+    // ── Diseases ──
+    let disPage = 1;
+    async function loadAdminDiseases(page = 1) {
+      disPage = page;
+      try {
+        const data = await apiFetch(`/api/diseases?page=${page}&limit=15`);
+        document.getElementById('dis-count').textContent = `${data.total} diseases total`;
+        const tbody = document.getElementById('diseases-tbody');
+        if (data.diseases.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No diseases found.</td></tr>'; return; }
+        tbody.innerHTML = data.diseases.map(d => `<tr>
+          <td><strong>${d.name}</strong></td><td>${d.category}</td><td>${d.related_specialties || '-'}</td>
+          <td><button class="btn btn-sm btn-secondary" onclick="editDisease(${d.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDisease(${d.id}, '${d.name.replace(/'/g, "\\'")}')">Delete</button></td>
+        </tr>`).join('');
+        renderPagination(document.getElementById('dis-pagination'), data.page, data.totalPages, loadAdminDiseases);
+      } catch (err) { console.error(err); }
+    }
+    function openDiseaseForm(d = null) {
+      document.getElementById('dis-form-title').textContent = d ? 'Edit Disease' : 'Add Disease';
+      document.getElementById('dis-id').value = d ? d.id : '';
+      document.getElementById('dis-name').value = d ? d.name : '';
+      document.getElementById('dis-category').value = d ? d.category : '';
+      document.getElementById('dis-specialties').value = d ? d.related_specialties : '';
+      document.getElementById('dis-overview').value = d ? d.overview : '';
+      document.getElementById('dis-causes').value = d ? d.causes : '';
+      document.getElementById('dis-symptoms').value = d ? d.symptoms : '';
+      document.getElementById('dis-risk').value = d ? d.risk_factors : '';
+      document.getElementById('dis-diagnosis').value = d ? d.diagnosis : '';
+      document.getElementById('dis-treatment').value = d ? d.treatment : '';
+      document.getElementById('dis-prevention').value = d ? d.prevention : '';
+      document.getElementById('disease-modal').classList.remove('hidden');
+    }
+    function closeDiseaseForm() { document.getElementById('disease-modal').classList.add('hidden'); }
+    async function editDisease(id) { try { const d = await apiFetch(`/api/diseases/${id}`); openDiseaseForm(d.disease); } catch(e) { alert('Failed to load.'); } }
+    document.getElementById('disease-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('dis-id').value;
+      const body = { name: document.getElementById('dis-name').value, category: document.getElementById('dis-category').value,
+        related_specialties: document.getElementById('dis-specialties').value, overview: document.getElementById('dis-overview').value,
+        causes: document.getElementById('dis-causes').value, symptoms: document.getElementById('dis-symptoms').value,
+        risk_factors: document.getElementById('dis-risk').value, diagnosis: document.getElementById('dis-diagnosis').value,
+        treatment: document.getElementById('dis-treatment').value, prevention: document.getElementById('dis-prevention').value };
+      try {
+        if (id) { await apiFetch(`/api/diseases/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-dis'), 'Updated!', 'success'); }
+        else { await apiFetch('/api/diseases', { method: 'POST', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-dis'), 'Added!', 'success'); }
+        closeDiseaseForm(); loadAdminDiseases(disPage);
+      } catch (err) { alert(err.message); }
+    });
+    async function deleteDisease(id, name) {
+      if (!confirm(`Delete "${name}"?`)) return;
+      try { await apiFetch(`/api/diseases/${id}`, { method: 'DELETE' }); showAlert(document.getElementById('alert-dis'), 'Deleted.', 'success'); loadAdminDiseases(disPage); } catch(e) { alert(e.message); }
+    }
+
+    // ── Guidelines ──
+    let guidePage = 1;
+    async function loadAdminGuidelines(page = 1) {
+      guidePage = page;
+      try {
+        const data = await apiFetch(`/api/guidelines?page=${page}&limit=15`);
+        document.getElementById('guide-count').textContent = `${data.total} guidelines total`;
+        const tbody = document.getElementById('guidelines-tbody');
+        if (data.guidelines.length === 0) { tbody.innerHTML = '<tr><td colspan="5">No guidelines found.</td></tr>'; return; }
+        tbody.innerHTML = data.guidelines.map(g => `<tr>
+          <td><strong>${g.title}</strong></td><td><span class="type-badge ${g.type}">${g.type}</span></td>
+          <td>${g.authority}</td><td>${g.category}</td>
+          <td><button class="btn btn-sm btn-secondary" onclick="editGuideline(${g.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteGuideline(${g.id}, '${g.title.replace(/'/g, "\\'")}')">Delete</button></td>
+        </tr>`).join('');
+        renderPagination(document.getElementById('guide-pagination'), data.page, data.totalPages, loadAdminGuidelines);
+      } catch (err) { console.error(err); }
+    }
+    function openGuidelineForm(g = null) {
+      document.getElementById('guide-form-title').textContent = g ? 'Edit Guideline' : 'Add Guideline';
+      document.getElementById('guide-id').value = g ? g.id : '';
+      document.getElementById('guide-title').value = g ? g.title : '';
+      document.getElementById('guide-type').value = g ? g.type : 'national';
+      document.getElementById('guide-category').value = g ? g.category : '';
+      document.getElementById('guide-authority').value = g ? g.authority : '';
+      document.getElementById('guide-date').value = g ? (g.publication_date || '') : '';
+      document.getElementById('guide-desc').value = g ? g.description : '';
+      document.getElementById('guide-link').value = g ? (g.link || '') : '';
+      document.getElementById('guideline-modal').classList.remove('hidden');
+    }
+    function closeGuidelineForm() { document.getElementById('guideline-modal').classList.add('hidden'); }
+    async function editGuideline(id) { try { const d = await apiFetch(`/api/guidelines/${id}`); openGuidelineForm(d.guideline); } catch(e) { alert('Failed to load.'); } }
+    document.getElementById('guideline-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('guide-id').value;
+      const body = { title: document.getElementById('guide-title').value, type: document.getElementById('guide-type').value,
+        category: document.getElementById('guide-category').value, authority: document.getElementById('guide-authority').value,
+        publication_date: document.getElementById('guide-date').value, description: document.getElementById('guide-desc').value,
+        link: document.getElementById('guide-link').value };
+      try {
+        if (id) { await apiFetch(`/api/guidelines/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-guide'), 'Updated!', 'success'); }
+        else { await apiFetch('/api/guidelines', { method: 'POST', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-guide'), 'Added!', 'success'); }
+        closeGuidelineForm(); loadAdminGuidelines(guidePage);
+      } catch (err) { alert(err.message); }
+    });
+    async function deleteGuideline(id, title) {
+      if (!confirm(`Delete "${title}"?`)) return;
+      try { await apiFetch(`/api/guidelines/${id}`, { method: 'DELETE' }); showAlert(document.getElementById('alert-guide'), 'Deleted.', 'success'); loadAdminGuidelines(guidePage); } catch(e) { alert(e.message); }
+    }
+
+    // ── Investigation Centers ──
+    let invPage = 1;
+    async function loadAdminInvestigations(page = 1) {
+      invPage = page;
+      try {
+        const data = await apiFetch(`/api/investigations?page=${page}&limit=15`);
+        document.getElementById('inv-count').textContent = `${data.total} centers total`;
+        const tbody = document.getElementById('investigations-tbody');
+        if (data.centers.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No centers found.</td></tr>'; return; }
+        tbody.innerHTML = data.centers.map(c => `<tr>
+          <td><strong>${c.name}</strong></td><td>${c.location}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.available_tests}</td>
+          <td><button class="btn btn-sm btn-secondary" onclick="editInvestigation(${c.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteInvestigation(${c.id}, '${c.name.replace(/'/g, "\\'")}')">Delete</button></td>
+        </tr>`).join('');
+        renderPagination(document.getElementById('inv-pagination'), data.page, data.totalPages, loadAdminInvestigations);
+      } catch (err) { console.error(err); }
+    }
+    function openInvestigationForm(c = null) {
+      document.getElementById('inv-form-title').textContent = c ? 'Edit Center' : 'Add Investigation Center';
+      document.getElementById('inv-id').value = c ? c.id : '';
+      document.getElementById('inv-name').value = c ? c.name : '';
+      document.getElementById('inv-location').value = c ? c.location : '';
+      document.getElementById('inv-address').value = c ? c.address : '';
+      document.getElementById('inv-tests').value = c ? c.available_tests : '';
+      document.getElementById('inv-contact').value = c ? c.contact : '';
+      document.getElementById('inv-hours').value = c ? c.opening_hours : '';
+      document.getElementById('investigation-modal').classList.remove('hidden');
+    }
+    function closeInvestigationForm() { document.getElementById('investigation-modal').classList.add('hidden'); }
+    async function editInvestigation(id) { try { const d = await apiFetch(`/api/investigations/${id}`); openInvestigationForm(d.center); } catch(e) { alert('Failed to load.'); } }
+    document.getElementById('investigation-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('inv-id').value;
+      const body = { name: document.getElementById('inv-name').value, location: document.getElementById('inv-location').value,
+        address: document.getElementById('inv-address').value, available_tests: document.getElementById('inv-tests').value,
+        contact: document.getElementById('inv-contact').value, opening_hours: document.getElementById('inv-hours').value };
+      try {
+        if (id) { await apiFetch(`/api/investigations/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-inv'), 'Updated!', 'success'); }
+        else { await apiFetch('/api/investigations', { method: 'POST', body: JSON.stringify(body) }); showAlert(document.getElementById('alert-inv'), 'Added!', 'success'); }
+        closeInvestigationForm(); loadAdminInvestigations(invPage);
+      } catch (err) { alert(err.message); }
+    });
+    async function deleteInvestigation(id, name) {
+      if (!confirm(`Delete "${name}"?`)) return;
+      try { await apiFetch(`/api/investigations/${id}`, { method: 'DELETE' }); showAlert(document.getElementById('alert-inv'), 'Deleted.', 'success'); loadAdminInvestigations(invPage); } catch(e) { alert(e.message); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAdminMedicines();
+      loadAdminDoctors();
+      loadAdminDiseases();
+      loadAdminGuidelines();
+      loadAdminInvestigations();
+    });
+  </script>
+</body>
+</html>

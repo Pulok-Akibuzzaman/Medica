@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Guidelines - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a class="active" onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="disclaimer-banner">
+      <span>&#9888;&#65039;</span>
+      <span>These guidelines are for informational purposes only. Always consult qualified healthcare professionals for medical decisions.</span>
+    </div>
+
+    <h1 class="page-title">Medical Guidelines</h1>
+    <p class="page-subtitle" id="page-subtitle">Browse national and international medical guidelines</p>
+
+    <div class="admin-tabs" id="type-tabs">
+      <button class="admin-tab active" data-type="all" onclick="switchType('all')">All</button>
+      <button class="admin-tab" data-type="national" onclick="switchType('national')">National</button>
+      <button class="admin-tab" data-type="international" onclick="switchType('international')">International</button>
+    </div>
+
+    <div class="search-section">
+      <div class="search-row">
+        <div class="search-group" style="flex:2">
+          <label>Search Guidelines</label>
+          <input type="text" id="search-input" placeholder="Search by title, authority, or keyword...">
+        </div>
+        <div class="search-group">
+          <label>Category</label>
+          <select id="category-filter">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+        <div class="search-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="searchGuidelines()">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="guidelines-grid" class="grid grid-3">
+      <p class="loading">Loading guidelines...</p>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Guideline Detail Modal -->
+  <div class="modal-overlay hidden" id="guideline-modal">
+    <div class="modal" style="max-width:640px">
+      <div id="guideline-detail"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeGuidelineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentPage = 1;
+    let currentType = '';
+
+    function getUrlType() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('type') || '';
+    }
+
+    function switchType(type) {
+      currentType = type === 'all' ? '' : type;
+
+      document.querySelectorAll('#type-tabs .admin-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.type === type);
+      });
+
+      const subtitle = document.getElementById('page-subtitle');
+      if (currentType === 'national') {
+        subtitle.textContent = 'National medical guidelines of Bangladesh';
+      } else if (currentType === 'international') {
+        subtitle.textContent = 'International medical guidelines and standards';
+      } else {
+        subtitle.textContent = 'Browse national and international medical guidelines';
+      }
+
+      loadGuidelines(1);
+    }
+
+    async function loadCategories() {
+      try {
+        const data = await apiFetch('/api/guidelines/categories');
+        const select = document.getElementById('category-filter');
+        data.categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          select.appendChild(opt);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadGuidelines(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search-input').value;
+      const category = document.getElementById('category-filter').value;
+      const grid = document.getElementById('guidelines-grid');
+
+      grid.innerHTML = '<p class="loading">Loading...</p>';
+
+      try {
+        const params = new URLSearchParams({ page, limit: 12 });
+        if (search) params.set('search', search);
+        if (currentType) params.set('type', currentType);
+        if (category !== 'all') params.set('category', category);
+
+        const data = await apiFetch(`/api/guidelines?${params}`);
+
+        if (data.guidelines.length === 0) {
+          grid.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No guidelines found. Try a different search.</p></div>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = data.guidelines.map(g => {
+          const desc = g.description && g.description.length > 120
+            ? g.description.substring(0, 120) + '...'
+            : (g.description || '');
+
+          return `
+            <div class="card guideline-card">
+              <div>
+                <span class="type-badge ${g.type}">${g.type}</span>
+                <span class="category-badge">${g.category}</span>
+              </div>
+              <h3>${g.title}</h3>
+              <p style="font-size:0.9rem;color:var(--text-light)">${desc}</p>
+              <div class="guideline-meta">
+                <span>🏛️ ${g.authority || 'N/A'}</span>
+                <span>📅 ${g.published_date ? formatDate(g.published_date) : 'N/A'}</span>
+              </div>
+              <div style="margin-top:auto;padding-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="showGuideline(${g.id})">View Details</button>
+                ${g.link ? `<a href="${g.link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open Link ↗</a>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        renderPagination(document.getElementById('pagination'), data.page, data.totalPages, loadGuidelines);
+      } catch (err) {
+        grid.innerHTML = '<div class="empty-state"><p>Failed to load guidelines.</p></div>';
+      }
+    }
+
+    function searchGuidelines() {
+      loadGuidelines(1);
+    }
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchGuidelines();
+    });
+
+    async function showGuideline(id) {
+      try {
+        const data = await apiFetch(`/api/guidelines/${id}`);
+        const g = data.guideline;
+        document.getElementById('guideline-detail').innerHTML = `
+          <div class="detail-header">
+            <div style="margin-bottom:0.5rem">
+              <span class="type-badge ${g.type}">${g.type}</span>
+              <span class="category-badge">${g.category}</span>
+            </div>
+            <h1 style="font-size:1.5rem">${g.title}</h1>
+          </div>
+          <div class="detail-section">
+            <h3>📄 Description</h3>
+            <p>${g.description || 'No description available.'}</p>
+          </div>
+          <div class="detail-section">
+            <h3>🏛️ Authority</h3>
+            <p>${g.authority || 'N/A'}</p>
+          </div>
+          <div class="detail-section">
+            <h3>📅 Publication Date</h3>
+            <p>${g.published_date ? formatDate(g.published_date) : 'N/A'}</p>
+          </div>
+          ${g.link ? `
+          <div class="detail-section">
+            <h3>🔗 Source</h3>
+            <a href="${g.link}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">Open Link ↗</a>
+          </div>
+          ` : ''}
+        `;
+        document.getElementById('guideline-modal').classList.remove('hidden');
+      } catch (err) {
+        alert('Failed to load guideline details.');
+      }
+    }
+
+    function closeGuidelineModal() {
+      document.getElementById('guideline-modal').classList.add('hidden');
+    }
+
+    document.getElementById('guideline-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeGuidelineModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlType = getUrlType();
+      if (urlType === 'national' || urlType === 'international') {
+        switchType(urlType);
+      } else {
+        switchType('all');
+      }
+      loadCategories();
+    });
+  </script>
+</body>
+</html>

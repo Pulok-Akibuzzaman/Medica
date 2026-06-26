@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Health Assistant - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html" class="active">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="chat-header-icon">🤖</div>
+        <div>
+          <h2>Medica AI Assistant</h2>
+          <p>Describe symptoms or ask health questions</p>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <div class="message message-bot">
+          <strong>Welcome to Medica AI Assistant!</strong><br><br>
+          I can help you with:<br>
+          &bull; Symptom guidance and specialist recommendations<br>
+          &bull; Medicine information and dosage details<br>
+          &bull; Finding doctors in Bangladesh<br>
+          &bull; General health tips<br><br>
+          Try saying: <em>"I have a headache"</em> or <em>"Tell me about Napa medicine"</em><br><br>
+          ⚠️ <strong>Disclaimer:</strong> This is not a medical diagnosis. Please consult a real doctor for proper medical advice.
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Describe your symptoms or ask a question..." autofocus>
+        <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    function addMessage(text, isUser = false) {
+      const div = document.createElement('div');
+      div.className = `message ${isUser ? 'message-user' : 'message-bot'}`;
+      if (isUser) {
+        div.textContent = text;
+      } else {
+        div.innerHTML = simpleMarkdown(text);
+      }
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+      const div = document.createElement('div');
+      div.className = 'message message-bot';
+      div.id = 'typing';
+      div.innerHTML = '<em>Analyzing your query...</em>';
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    async function sendMessage() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      addMessage(message, true);
+      chatInput.value = '';
+      sendBtn.disabled = true;
+      addTypingIndicator();
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+
+        removeTypingIndicator();
+
+        if (data.response) {
+          addMessage(data.response);
+        } else {
+          addMessage('Sorry, I could not process your request. Please try again.');
+        }
+      } catch (err) {
+        removeTypingIndicator();
+        addMessage('Connection error. Please check your internet and try again.');
+      }
+
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+  </script>
+</body>
+</html>

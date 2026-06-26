@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicines - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html" class="active">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Medicine Database</h1>
+    <p class="page-subtitle">Browse and search medicine information</p>
+
+    <div class="search-section">
+      <div class="search-row">
+        <div class="search-group" style="flex:2">
+          <label>Search Medicines</label>
+          <input type="text" id="search-input" placeholder="Search by name, generic name, or use...">
+        </div>
+        <div class="search-group">
+          <label>Category</label>
+          <select id="category-filter">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+        <div class="search-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="searchMedicines()">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="medicines-grid" class="grid grid-3">
+      <p class="loading">Loading medicines...</p>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Medicine Detail Modal -->
+  <div class="modal-overlay hidden" id="medicine-modal">
+    <div class="modal" style="max-width:640px">
+      <div id="medicine-detail"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeMedicineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentPage = 1;
+
+    async function loadCategories() {
+      try {
+        const data = await apiFetch('/api/medicines/categories');
+        const select = document.getElementById('category-filter');
+        data.categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          select.appendChild(opt);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadMedicines(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search-input').value;
+      const category = document.getElementById('category-filter').value;
+      const grid = document.getElementById('medicines-grid');
+
+      grid.innerHTML = '<p class="loading">Loading...</p>';
+
+      try {
+        const params = new URLSearchParams({ page, limit: 12 });
+        if (search) params.set('search', search);
+        if (category !== 'all') params.set('category', category);
+
+        const data = await apiFetch(`/api/medicines?${params}`);
+
+        if (data.medicines.length === 0) {
+          grid.innerHTML = '<div class="empty-state"><div class="icon">💊</div><p>No medicines found. Try a different search.</p></div>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = data.medicines.map(m => `
+          <div class="card medicine-card" onclick="showMedicine(${m.id})">
+            <span class="category-badge">${m.category}</span>
+            <h3>${m.name}</h3>
+            <p class="generic">${m.generic_name}</p>
+            <p class="uses">${m.uses}</p>
+          </div>
+        `).join('');
+
+        renderPagination(document.getElementById('pagination'), data.page, data.totalPages, loadMedicines);
+      } catch (err) {
+        grid.innerHTML = '<div class="empty-state"><p>Failed to load medicines.</p></div>';
+      }
+    }
+
+    function searchMedicines() {
+      loadMedicines(1);
+    }
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchMedicines();
+    });
+
+    async function showMedicine(id) {
+      try {
+        const data = await apiFetch(`/api/medicines/${id}`);
+        const m = data.medicine;
+        document.getElementById('medicine-detail').innerHTML = `
+          <div class="detail-header">
+            <span class="category-badge" style="margin-bottom:0.5rem;display:inline-block">${m.category}</span>
+            <h1 style="font-size:1.5rem">${m.name}</h1>
+            <p class="subtitle">${m.generic_name}</p>
+          </div>
+          <div class="detail-section">
+            <h3>📋 Uses</h3>
+            <p>${m.uses}</p>
+          </div>
+          <div class="detail-section">
+            <h3>💉 Dosage</h3>
+            <p>${m.dosage}</p>
+          </div>
+          <div class="detail-section">
+            <h3>⚠️ Side Effects</h3>
+            <p>${m.side_effects}</p>
+          </div>
+          <div class="detail-section">
+            <h3 style="color:var(--danger)">🚨 Warnings</h3>
+            <div class="warning-box">${m.warnings}</div>
+          </div>
+        `;
+        document.getElementById('medicine-modal').classList.remove('hidden');
+      } catch (err) {
+        alert('Failed to load medicine details.');
+      }
+    }
+
+    function closeMedicineModal() {
+      document.getElementById('medicine-modal').classList.add('hidden');
+    }
+
+    document.getElementById('medicine-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeMedicineModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCategories();
+      loadMedicines();
+    });
+  </script>
+</body>
+</html>

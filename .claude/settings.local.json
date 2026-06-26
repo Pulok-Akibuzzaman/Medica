@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Invoke-RestMethod -Uri \"http://localhost:3000/api/medicines?limit=3\" -Method Get)",
+      "PowerShell(Invoke-RestMethod -Uri \"http://localhost:3000/api/doctors?limit=2\" -Method Get)"
+    ]
+  }
+}

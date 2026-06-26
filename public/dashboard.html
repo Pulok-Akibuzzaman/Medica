@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Medica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard-header">
+      <div>
+        <h1 id="welcome-msg">Welcome back!</h1>
+        <p class="page-subtitle" style="margin-bottom:0">Here's your medical platform overview</p>
+      </div>
+    </div>
+
+    <div class="stat-cards">
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-medicines">-</div>
+        <div class="stat-label">Medicines</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-doctors">-</div>
+        <div class="stat-label">Doctors</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-favorites">-</div>
+        <div class="stat-label">Favorites</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-chats">-</div>
+        <div class="stat-label">Chat Sessions</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Quick Actions</h3>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <a href="medicines.html" class="btn btn-secondary">💊 Browse Medicines</a>
+          <a href="doctors.html" class="btn btn-secondary">👨‍⚕️ Find Doctors</a>
+          <a href="chatbot.html" class="btn btn-secondary">🤖 AI Health Assistant</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Favorite Doctors</h3>
+        <div id="fav-doctors-list">
+          <p class="loading">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!isLoggedIn()) window.location.href = '/login.html';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = getUser();
+      if (user) {
+        document.getElementById('welcome-msg').textContent = `Welcome, ${user.name}!`;
+      }
+
+      try {
+        const [medsData, docsData] = await Promise.all([
+          apiFetch('/api/medicines?limit=1'),
+          apiFetch('/api/doctors?limit=1')
+        ]);
+        document.getElementById('stat-medicines').textContent = medsData.total;
+        document.getElementById('stat-doctors').textContent = docsData.total;
+      } catch (e) {
+        console.error(e);
+      }
+
+      try {
+        const favData = await apiFetch('/api/favorites');
+        document.getElementById('stat-favorites').textContent = favData.favorites.length;
+
+        const favList = document.getElementById('fav-doctors-list');
+        if (favData.favorites.length === 0) {
+          favList.innerHTML = '<p style="color:var(--text-light)">No favorite doctors yet. Browse the doctor directory to add some!</p>';
+        } else {
+          favList.innerHTML = favData.favorites.slice(0, 5).map(d => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+              <div>
+                <strong>${d.name}</strong><br>
+                <small style="color:var(--text-light)">${d.specialty} — ${d.location}</small>
+              </div>
+              <span class="stars">${renderStars(d.rating)}</span>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        document.getElementById('stat-favorites').textContent = '0';
+        document.getElementById('fav-doctors-list').innerHTML = '<p style="color:var(--text-light)">Sign in to see favorites</p>';
+      }
+
+      try {
+        const chatData = await apiFetch('/api/chat/history');
+        document.getElementById('stat-chats').textContent = chatData.logs.length;
+      } catch (e) {
+        document.getElementById('stat-chats').textContent = '0';
+      }
+    });
+  </script>
+</body>
+</html>

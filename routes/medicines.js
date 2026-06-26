@@ -1,0 +1,109 @@
+const express = require('express');
+const router = express.Router();
+const { runQuery, getOne, getAll, getLastInsertId, getChanges } = require('../database/setup');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+
+router.get('/', (req, res) => {
+  try {
+    const { search, category, page = 1, limit = 12 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = 'SELECT * FROM medicines WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM medicines WHERE 1=1';
+    const params = [];
+    const countParams = [];
+
+    if (search) {
+      const clause = ' AND (name LIKE ? OR generic_name LIKE ? OR uses LIKE ?)';
+      query += clause;
+      countQuery += clause;
+      const term = `%${search}%`;
+      params.push(term, term, term);
+      countParams.push(term, term, term);
+    }
+
+    if (category && category !== 'all') {
+      query += ' AND category = ?';
+      countQuery += ' AND category = ?';
+      params.push(category);
+      countParams.push(category);
+    }
+
+    const countRow = getOne(countQuery, countParams);
+    const total = countRow ? countRow.total : 0;
+
+    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), offset);
+
+    const medicines = getAll(query, params);
+    const totalPages = Math.ceil(total / parseInt(limit));
+
+    res.json({ medicines, total, page: parseInt(page), totalPages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch medicines.' });
+  }
+});
+
+router.get('/categories', (req, res) => {
+  const categories = getAll('SELECT DISTINCT category FROM medicines ORDER BY category');
+  res.json({ categories: categories.map(c => c.category) });
+});
+
+router.get('/:id', (req, res) => {
+  const medicine = getOne('SELECT * FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
+  if (!medicine) return res.status(404).json({ error: 'Medicine not found.' });
+  res.json({ medicine });
+});
+
+router.post('/', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { name, generic_name, uses, dosage, side_effects, warnings, category } = req.body;
+
+    if (!name || !generic_name || !uses || !dosage || !side_effects || !warnings) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    runQuery(
+      'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General']
+    );
+
+    res.status(201).json({ message: 'Medicine added.', id: getLastInsertId() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to add medicine.' });
+  }
+});
+
+router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { name, generic_name, uses, dosage, side_effects, warnings, category } = req.body;
+
+    const existing = getOne('SELECT id FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
+    if (!existing) return res.status(404).json({ error: 'Medicine not found.' });
+
+    runQuery(
+      'UPDATE medicines SET name=?, generic_name=?, uses=?, dosage=?, side_effects=?, warnings=?, category=? WHERE id=?',
+      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General', parseInt(req.params.id)]
+    );
+
+    res.json({ message: 'Medicine updated.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update medicine.' });
+  }
+});
+
+router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    runQuery('DELETE FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
+    if (getChanges() === 0) return res.status(404).json({ error: 'Medicine not found.' });
+    res.json({ message: 'Medicine deleted.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete medicine.' });
+  }
+});
+
+module.exports = router;

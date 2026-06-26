@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medica - Bangladesh Medical Information & Doctor Finder</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm">
+            <span id="user-name"></span>
+          </a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Your Health, Our Priority</h1>
+    <p>Find trusted doctors across Bangladesh, explore medicine information, and get AI-powered health guidance — all in one platform.</p>
+    <div class="hero-actions">
+      <a href="doctors.html" class="btn btn-primary">Find Doctors</a>
+      <a href="medicines.html" class="btn btn-secondary">Browse Medicines</a>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>What We Offer</h2>
+    <p class="subtitle">Comprehensive medical information at your fingertips</p>
+    <div class="grid grid-4">
+      <div class="card feature-card">
+        <div class="feature-icon">💊</div>
+        <h3>Medicine Database</h3>
+        <p>Browse detailed information about medicines including uses, dosage, side effects, and warnings.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">👨‍⚕️</div>
+        <h3>Doctor Directory</h3>
+        <p>Find qualified doctors across Bangladesh. Search by location, specialty, and read patient reviews.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🦠</div>
+        <h3>Disease Articles</h3>
+        <p>Learn about diseases — causes, symptoms, diagnosis, treatment options, and prevention tips.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">📘</div>
+        <h3>Medical Guidelines</h3>
+        <p>Access national and international clinical guidelines from DGHS, WHO, CDC, and NHS.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🔬</div>
+        <h3>Investigation Centers</h3>
+        <p>Find diagnostic and test centers across Bangladesh. Search by location and test type.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Health Assistant</h3>
+        <p>Describe your symptoms and get guidance on which specialist to see and basic health advice.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">⭐</div>
+        <h3>Ratings & Reviews</h3>
+        <p>Read and write reviews for doctors. Save your favorites for quick access later.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" style="padding-top:0">
+    <h2>Serving All of Bangladesh</h2>
+    <p class="subtitle">Find healthcare professionals in major cities</p>
+    <div class="grid grid-3" id="location-stats" style="text-align:center">
+      <div class="card"><h3 style="color:var(--primary)">Dhaka</h3><p>Capital city with top hospitals</p></div>
+      <div class="card"><h3 style="color:var(--primary)">Chittagong</h3><p>Port city medical centers</p></div>
+      <div class="card"><h3 style="color:var(--primary)">Rajshahi</h3><p>Northern region healthcare</p></div>
+      <div class="card"><h3 style="color:var(--primary)">Sylhet</h3><p>Northeast medical services</p></div>
+      <div class="card"><h3 style="color:var(--primary)">Khulna</h3><p>Southwest health network</p></div>
+      <div class="card"><h3 style="color:var(--primary)">Rangpur</h3><p>Northern division care</p></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 Medica Platform. This platform is for informational purposes only.</p>
+    <p style="margin-top:0.5rem">Always consult a qualified healthcare professional for medical advice.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

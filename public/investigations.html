@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investigation Centers - BD Medical</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> BD Medical</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines ▾</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html" class="active">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="disclaimer-banner">⚠️ This information is for educational purposes only. Please consult a licensed doctor for medical advice.</div>
+
+    <h1 class="page-title">Investigation & Diagnostic Centers</h1>
+    <p class="page-subtitle">Find diagnostic and test centers across Bangladesh</p>
+
+    <div class="search-section">
+      <div class="search-row">
+        <div class="search-group" style="flex:2">
+          <label>Search Centers</label>
+          <input type="text" id="search-input" placeholder="Search by name, test type, or address...">
+        </div>
+        <div class="search-group">
+          <label>Location</label>
+          <select id="location-filter">
+            <option value="all">All Locations</option>
+          </select>
+        </div>
+        <div class="search-group">
+          <label>Test Type</label>
+          <select id="test-filter">
+            <option value="all">All Tests</option>
+          </select>
+        </div>
+        <div class="search-group" style="flex:0">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="searchCenters()">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="centers-grid" class="grid grid-2">
+      <p class="loading">Loading investigation centers...</p>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Center Detail Modal -->
+  <div class="modal-overlay hidden" id="center-modal">
+    <div class="modal" style="max-width:600px">
+      <div id="center-detail"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCenterModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentPage = 1;
+
+    async function loadFilters() {
+      try {
+        const [locData, testData] = await Promise.all([
+          apiFetch('/api/investigations/locations'),
+          apiFetch('/api/investigations/test-types')
+        ]);
+
+        const locSelect = document.getElementById('location-filter');
+        locData.locations.forEach(loc => {
+          const opt = document.createElement('option');
+          opt.value = loc; opt.textContent = loc;
+          locSelect.appendChild(opt);
+        });
+
+        const testSelect = document.getElementById('test-filter');
+        testData.types.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          testSelect.appendChild(opt);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadCenters(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search-input').value;
+      const location = document.getElementById('location-filter').value;
+      const test_type = document.getElementById('test-filter').value;
+      const grid = document.getElementById('centers-grid');
+
+      grid.innerHTML = '<p class="loading">Loading...</p>';
+
+      try {
+        const params = new URLSearchParams({ page, limit: 12 });
+        if (search) params.set('search', search);
+        if (location !== 'all') params.set('location', location);
+        if (test_type !== 'all') params.set('test_type', test_type);
+
+        const data = await apiFetch(`/api/investigations?${params}`);
+
+        if (data.centers.length === 0) {
+          grid.innerHTML = '<div class="empty-state"><div class="icon">🔬</div><p>No investigation centers found. Try a different search.</p></div>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = data.centers.map(c => {
+          const tests = c.available_tests.split(',').map(t => t.trim()).slice(0, 6);
+          const hasMore = c.available_tests.split(',').length > 6;
+          return `
+            <div class="card center-card">
+              <h3>${c.name}</h3>
+              <div class="doctor-meta" style="margin-top:0">
+                <span>📍 ${c.address}, ${c.location}</span>
+                <span>📞 ${c.contact}</span>
+                <span>🕐 ${c.opening_hours}</span>
+              </div>
+              <div class="center-tests">
+                ${tests.map(t => `<span class="test-tag">${t}</span>`).join('')}
+                ${hasMore ? '<span class="test-tag">+more</span>' : ''}
+              </div>
+              <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+                <button class="btn btn-sm btn-secondary" onclick="showCenter(${c.id})">View Details</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        renderPagination(document.getElementById('pagination'), data.page, data.totalPages, loadCenters);
+      } catch (err) {
+        grid.innerHTML = '<div class="empty-state"><p>Failed to load investigation centers.</p></div>';
+      }
+    }
+
+    function searchCenters() { loadCenters(1); }
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchCenters();
+    });
+
+    async function showCenter(id) {
+      try {
+        const data = await apiFetch(`/api/investigations/${id}`);
+        const c = data.center;
+        const tests = c.available_tests.split(',').map(t => t.trim());
+
+        document.getElementById('center-detail').innerHTML = `
+          <h2 style="font-size:1.3rem;margin-bottom:1rem">${c.name}</h2>
+          <div class="detail-section">
+            <h3>📍 Location & Address</h3>
+            <p>${c.address}, ${c.location}</p>
+          </div>
+          <div class="detail-section">
+            <h3>📞 Contact</h3>
+            <p>${c.contact}</p>
+          </div>
+          <div class="detail-section">
+            <h3>🕐 Opening Hours</h3>
+            <p>${c.opening_hours}</p>
+          </div>
+          <div class="detail-section">
+            <h3>🔬 Available Tests</h3>
+            <div class="center-tests" style="margin-top:0.5rem">
+              ${tests.map(t => `<span class="test-tag" style="font-size:0.82rem;padding:0.25rem 0.65rem">${t}</span>`).join('')}
+            </div>
+          </div>
+        `;
+        document.getElementById('center-modal').classList.remove('hidden');
+      } catch (err) {
+        alert('Failed to load center details.');
+      }
+    }
+
+    function closeCenterModal() {
+      document.getElementById('center-modal').classList.add('hidden');
+    }
+
+    document.getElementById('center-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeCenterModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFilters();
+      loadCenters();
+    });
+  </script>
+</body>
+</html>
