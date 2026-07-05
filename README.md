@@ -1,17 +1,18 @@
 # Medica
 
-Medica is a Bangladesh-focused medical information and doctor finder platform built with Node.js, Express, and a lightweight SQL.js database. It includes public-facing pages for medicines, doctors, diseases, clinical guidelines, investigation centers, and an AI health assistant, plus authentication, favorites, reviews, and an admin area.
+Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmacy platform built with Node.js, Express, and a lightweight SQL.js database. It includes public-facing pages for medicines, doctors, diseases, clinical guidelines, investigation centers, and an AI health assistant, plus authentication, favorites, reviews, medicine purchasing with order tracking, and an admin area.
 
 ## Features
 
-- Medicine directory with uses, dosage, side effects, warnings, and categories
+- Medicine directory with uses, dosage, side effects, warnings, categories, and prices
+- E-pharmacy: cart, checkout with shipping details, order history, and category-based medicine recommendations
 - Doctor directory with search, profiles, favorites, and reviews
 - Disease knowledge base with symptoms, diagnosis, treatment, and prevention
 - National and international medical guideline listings
 - Investigation and diagnostic center directory
 - AI health assistant/chat page
 - User registration, login, and JWT-based authentication
-- Admin account support for protected areas
+- Admin account support for protected areas, including order/shipping management
 - Persistent local database stored in `database/medical.db`
 
 ## Tech Stack
@@ -104,8 +105,9 @@ The frontend includes these pages under `public/`:
 - Medical guidelines: `guidelines.html`
 - Investigation centers: `investigations.html`
 - AI assistant/chat: `chatbot.html`
-- Dashboard: `dashboard.html`
-- Admin panel: `admin.html`
+- Shopping cart and checkout: `cart.html`
+- Dashboard (with order history): `dashboard.html`
+- Admin panel (with order management): `admin.html`
 
 ## API Overview
 
@@ -120,6 +122,8 @@ The server mounts these API groups:
 - `/api/diseases`
 - `/api/guidelines`
 - `/api/investigations`
+- `/api/cart`
+- `/api/orders`
 
 Authentication uses Bearer tokens. Protected endpoints expect the `Authorization: Bearer <token>` header.
 
