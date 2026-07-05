@@ -56,10 +56,50 @@ function updateNav() {
       if (user.role === 'admin') adminLink.classList.remove('hidden');
       else adminLink.classList.add('hidden');
     }
+    if (!document.getElementById('cart-link')) {
+      const cart = document.createElement('a');
+      cart.id = 'cart-link';
+      cart.href = 'cart.html';
+      cart.className = 'btn btn-secondary btn-sm';
+      cart.title = 'My Cart';
+      cart.innerHTML = '🛒 <span id="cart-count" style="display:none;background:var(--danger,#e53e3e);color:#fff;border-radius:10px;padding:0 6px;font-size:0.7rem;margin-left:2px"></span>';
+      userLinks.prepend(cart);
+    }
+    updateCartBadge();
   } else {
     authLinks.classList.remove('hidden');
     userLinks.classList.add('hidden');
   }
+}
+
+function formatPrice(price) {
+  return `৳${Number(price || 0).toFixed(2)}`;
+}
+
+async function updateCartBadge() {
+  if (!isLoggedIn()) return;
+  try {
+    const data = await apiFetch('/api/cart');
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+      const count = data.items.reduce((sum, i) => sum + i.quantity, 0);
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+  } catch (e) { /* cart badge is non-critical */ }
+}
+
+async function addToCart(medicineId, quantity = 1) {
+  if (!isLoggedIn()) {
+    window.location.href = '/login.html';
+    return false;
+  }
+  await apiFetch('/api/cart', {
+    method: 'POST',
+    body: JSON.stringify({ medicine_id: medicineId, quantity })
+  });
+  updateCartBadge();
+  return true;
 }
 
 function logout() {

@@ -4,6 +4,7 @@ const { runQuery, getOne, getAll, getLastInsertId, getChanges, saveDb } = requir
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const DELIVERY_FEE = 50;
 
 // Place an order from the current cart (checkout)
 router.post('/', authenticateToken, (req, res) => {
@@ -27,7 +28,8 @@ router.post('/', authenticateToken, (req, res) => {
       }
     }
 
-    const total = Math.round(items.reduce((sum, i) => sum + i.price * i.quantity, 0) * 100) / 100;
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const total = Math.round((subtotal + DELIVERY_FEE) * 100) / 100;
 
     runQuery(
       'INSERT INTO orders (user_id, total, status, shipping_name, shipping_phone, shipping_address) VALUES (?, ?, ?, ?, ?, ?)',
