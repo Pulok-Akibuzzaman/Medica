@@ -56,17 +56,36 @@ router.get('/:id', (req, res) => {
   res.json({ medicine });
 });
 
+router.get('/:id/related', (req, res) => {
+  try {
+    const medicine = getOne('SELECT id, category, generic_name FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
+    if (!medicine) return res.status(404).json({ error: 'Medicine not found.' });
+
+    // Same generic first (direct substitutes), then same category
+    const related = getAll(
+      `SELECT id, name, generic_name, category, price FROM medicines
+       WHERE id != ? AND (generic_name = ? OR category = ?)
+       ORDER BY (generic_name = ?) DESC, name ASC LIMIT 4`,
+      [medicine.id, medicine.generic_name, medicine.category, medicine.generic_name]
+    );
+    res.json({ related });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch related medicines.' });
+  }
+});
+
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const { name, generic_name, uses, dosage, side_effects, warnings, category } = req.body;
+    const { name, generic_name, uses, dosage, side_effects, warnings, category, price, stock } = req.body;
 
     if (!name || !generic_name || !uses || !dosage || !side_effects || !warnings) {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
     runQuery(
-      'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General']
+      'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General', parseFloat(price) || 0, parseInt(stock) || 100]
     );
 
     res.status(201).json({ message: 'Medicine added.', id: getLastInsertId() });
@@ -78,14 +97,14 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const { name, generic_name, uses, dosage, side_effects, warnings, category } = req.body;
+    const { name, generic_name, uses, dosage, side_effects, warnings, category, price, stock } = req.body;
 
     const existing = getOne('SELECT id FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
     if (!existing) return res.status(404).json({ error: 'Medicine not found.' });
 
     runQuery(
-      'UPDATE medicines SET name=?, generic_name=?, uses=?, dosage=?, side_effects=?, warnings=?, category=? WHERE id=?',
-      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General', parseInt(req.params.id)]
+      'UPDATE medicines SET name=?, generic_name=?, uses=?, dosage=?, side_effects=?, warnings=?, category=?, price=?, stock=? WHERE id=?',
+      [name, generic_name, uses, dosage, side_effects, warnings, category || 'General', parseFloat(price) || 0, parseInt(stock) || 100, parseInt(req.params.id)]
     );
 
     res.json({ message: 'Medicine updated.' });

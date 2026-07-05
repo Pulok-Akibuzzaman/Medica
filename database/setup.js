@@ -60,6 +60,8 @@ async function initDatabase() {
       side_effects TEXT NOT NULL,
       warnings TEXT NOT NULL,
       category TEXT DEFAULT 'General',
+      price REAL DEFAULT 0,
+      stock INTEGER DEFAULT 100,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -156,9 +158,46 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      medicine_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, medicine_id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      total REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      shipping_name TEXT NOT NULL,
+      shipping_phone TEXT NOT NULL,
+      shipping_address TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL,
+      medicine_id INTEGER NOT NULL,
+      medicine_name TEXT NOT NULL,
+      price REAL NOT NULL,
+      quantity INTEGER NOT NULL
+    )
+  `);
+
+  migrateMedicinePrices(db);
+
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  const existing = db.exec(`SELECT id FROM users WHERE email = '${adminEmail.replace(/'/g, "''")}'`);
+  const existing = db.exec('SELECT id FROM users WHERE email = ?', [adminEmail]);
   if (existing.length === 0 || existing[0].values.length === 0) {
     const hash = bcrypt.hashSync(adminPassword, 10);
     db.run('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', ['Admin', adminEmail, hash, 'admin']);
@@ -167,6 +206,35 @@ async function initDatabase() {
   }
 
   console.log('Database initialized successfully');
+}
+
+// Older databases were created before the e-pharmacy module existed, so the
+// medicines table may lack price/stock columns and have no prices set.
+function migrateMedicinePrices(db) {
+  const columns = db.exec('PRAGMA table_info(medicines)');
+  const names = columns.length > 0 ? columns[0].values.map(c => c[1]) : [];
+
+  if (!names.includes('price')) {
+    db.run('ALTER TABLE medicines ADD COLUMN price REAL DEFAULT 0');
+  }
+  if (!names.includes('stock')) {
+    db.run('ALTER TABLE medicines ADD COLUMN stock INTEGER DEFAULT 100');
+  }
+
+  const basePrices = {
+    'Pain Relief': 2, 'Gastric': 5, 'Antibiotic': 12, 'Respiratory': 8,
+    'Cardiovascular': 10, 'Allergy': 3, 'Diabetes': 7, 'Vitamins': 4
+  };
+  const unpriced = db.exec('SELECT id, category FROM medicines WHERE price IS NULL OR price <= 0');
+  if (unpriced.length > 0) {
+    unpriced[0].values.forEach(([id, category]) => {
+      const base = basePrices[category] || 6;
+      const price = Math.round((base + (id % 7) * 1.5) * 100) / 100;
+      db.run('UPDATE medicines SET price = ?, stock = COALESCE(stock, 100) WHERE id = ?', [price, id]);
+    });
+    saveDb();
+    console.log(`Assigned prices to ${unpriced[0].values.length} medicines`);
+  }
 }
 
 function runQuery(sql, params = []) {

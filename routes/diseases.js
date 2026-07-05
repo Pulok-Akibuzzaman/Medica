@@ -66,11 +66,24 @@ router.get('/:id', (req, res) => {
     }
   }
 
-  const investigations = getAll(
-    `SELECT id, name, location, available_tests, contact FROM investigation_centers
-     WHERE available_tests LIKE ? LIMIT 5`,
-    [`%${disease.name.split(' ')[0]}%`]
-  );
+  // Match centers whose test list mentions any significant word from the
+  // disease name or its diagnosis text (e.g. "blood", "X-ray", "biopsy").
+  const stopwords = new Set(['and', 'or', 'the', 'with', 'for', 'may', 'test', 'tests', 'disease', 'chronic', 'acute', 'type']);
+  const terms = [...new Set(
+    `${disease.name} ${disease.diagnosis || ''}`
+      .toLowerCase()
+      .split(/[^a-z-]+/)
+      .filter(w => w.length > 3 && !stopwords.has(w))
+  )];
+  let investigations = [];
+  if (terms.length > 0) {
+    const clause = terms.map(() => 'available_tests LIKE ?').join(' OR ');
+    investigations = getAll(
+      `SELECT id, name, location, available_tests, contact FROM investigation_centers
+       WHERE ${clause} LIMIT 5`,
+      terms.map(t => `%${t}%`)
+    );
+  }
 
   res.json({ disease, relatedDoctors: doctors, relatedInvestigations: investigations });
 });

@@ -32,6 +32,8 @@ async function start() {
   app.use('/api/diseases', require('./routes/diseases'));
   app.use('/api/guidelines', require('./routes/guidelines'));
   app.use('/api/investigations', require('./routes/investigations'));
+  app.use('/api/cart', require('./routes/cart'));
+  app.use('/api/orders', require('./routes/orders'));
 
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
