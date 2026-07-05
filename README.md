@@ -147,7 +147,3 @@ server.js      Application entry point
 - **"Login failed."** — usually means the server started without a valid `JWT_SECRET` (older versions) or the token secret changed; log in again to get a fresh token.
 - **No seeded data** — run the seed scripts after the database is initialized.
 - Changing admin credentials in `.env` only affects a fresh database; delete `database/medical.db` if you want to recreate it from scratch.
-
-## License
-
-No license file is currently included. Add one if you want to publish or share the project publicly.
