@@ -58,17 +58,29 @@ router.get('/:id', (req, res) => {
 
 router.get('/:id/related', (req, res) => {
   try {
-    const medicine = getOne('SELECT id, category, generic_name FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
+    const medicine = getOne('SELECT id, category, generic_name, price FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
     if (!medicine) return res.status(404).json({ error: 'Medicine not found.' });
 
-    // Same generic first (direct substitutes), then same category
-    const related = getAll(
+    // Cheaper same-category alternatives first (same generic = direct
+    // substitute, ranked top), cheapest first.
+    let related = getAll(
       `SELECT id, name, generic_name, category, price FROM medicines
-       WHERE id != ? AND (generic_name = ? OR category = ?)
-       ORDER BY (generic_name = ?) DESC, name ASC LIMIT 4`,
-      [medicine.id, medicine.generic_name, medicine.category, medicine.generic_name]
+       WHERE id != ? AND category = ? AND price < ?
+       ORDER BY (generic_name = ?) DESC, price ASC LIMIT 4`,
+      [medicine.id, medicine.category, medicine.price, medicine.generic_name]
     );
-    res.json({ related });
+
+    // If nothing cheaper exists, fall back to any same-category medicine
+    if (related.length === 0) {
+      related = getAll(
+        `SELECT id, name, generic_name, category, price FROM medicines
+         WHERE id != ? AND category = ?
+         ORDER BY (generic_name = ?) DESC, price ASC LIMIT 4`,
+        [medicine.id, medicine.category, medicine.generic_name]
+      );
+    }
+
+    res.json({ related, basePrice: medicine.price });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch related medicines.' });
@@ -118,6 +130,7 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
   try {
     runQuery('DELETE FROM medicines WHERE id = ?', [parseInt(req.params.id)]);
     if (getChanges() === 0) return res.status(404).json({ error: 'Medicine not found.' });
+    runQuery('DELETE FROM cart_items WHERE medicine_id = ?', [parseInt(req.params.id)]);
     res.json({ message: 'Medicine deleted.' });
   } catch (err) {
     console.error(err);

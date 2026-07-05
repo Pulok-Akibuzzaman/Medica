@@ -111,6 +111,8 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
   try {
     runQuery('DELETE FROM doctors WHERE id = ?', [parseInt(req.params.id)]);
     if (getChanges() === 0) return res.status(404).json({ error: 'Doctor not found.' });
+    runQuery('DELETE FROM favorites WHERE doctor_id = ?', [parseInt(req.params.id)]);
+    runQuery('DELETE FROM reviews WHERE doctor_id = ?', [parseInt(req.params.id)]);
     res.json({ message: 'Doctor deleted.' });
   } catch (err) {
     console.error(err);

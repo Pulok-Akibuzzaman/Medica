@@ -1,24 +1,31 @@
 # Medica
 
-Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmacy platform built with Node.js, Express, and a lightweight SQL.js database. It includes public-facing pages for medicines, doctors, diseases, clinical guidelines, investigation centers, and an AI health assistant, plus authentication, favorites, reviews, medicine purchasing with order tracking, and an admin area.
+Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmacy platform built with Node.js, Express, and a lightweight SQL.js database. It includes public-facing pages for medicines, doctors, diseases, clinical guidelines, and investigation centers, plus an AI health assistant, authentication, favorites, reviews, medicine purchasing with order tracking, and an admin area.
 
 ## Features
 
-- Medicine directory with uses, dosage, side effects, warnings, categories, and prices
-- E-pharmacy: cart, checkout with shipping details, order history, and category-based medicine recommendations
+- Medicine directory with uses, dosage, side effects, warnings, categories, prices, and stock
+- E-pharmacy: shopping cart, checkout with shipping details (৳50 flat delivery fee), order history, and stock tracking
+- Smart recommendations: while viewing a medicine, the system suggests cheaper same-category alternatives (same-generic substitutes ranked first) with a "Save ৳X" badge
 - Doctor directory with search, profiles, favorites, and reviews
-- Disease knowledge base with symptoms, diagnosis, treatment, and prevention
+- Disease knowledge base with symptoms, diagnosis, treatment, prevention, and related doctors/test centers
 - National and international medical guideline listings
 - Investigation and diagnostic center directory
-- AI health assistant/chat page
+- AI health assistant (registered users only) — rule-based symptom analysis that suggests specialties, doctors, and general advice, with per-user chat history
 - User registration, login, and JWT-based authentication
-- Admin account support for protected areas, including order/shipping management
+- Admin panel with full add/edit/delete for medicines, doctors, diseases, guidelines, and investigation centers, plus order/shipping management
 - Persistent local database stored in `database/medical.db`
+
+## User Roles
+
+- **Guest** — browse and search medicines, doctors, diseases, guidelines, and investigation centers (read-only)
+- **Registered user** — everything a guest can do, plus the AI health assistant, buying medicines, cart and order history, favoriting doctors, and writing reviews
+- **Admin** — everything above, plus managing all database records and processing orders (pending → processing → shipped → delivered / cancelled)
 
 ## Tech Stack
 
 - Backend: Node.js, Express
-- Database: SQL.js (SQLite in JavaScript)
+- Database: SQL.js (SQLite in JavaScript), persisted to a local file
 - Authentication: JSON Web Tokens, bcryptjs
 - Middleware: CORS, rate limiting
 - Frontend: Static HTML, CSS, and vanilla JavaScript
@@ -27,7 +34,6 @@ Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmac
 
 - Node.js 18 or newer
 - npm
-- A terminal with access to the project folder
 
 ## Installation
 
@@ -38,7 +44,7 @@ Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmac
 npm install
 ```
 
-3. Create a `.env` file in the project root if you do not already have one.
+3. Create a `.env` file in the project root (see below). **The server will refuse to start without `JWT_SECRET`.**
 
 ## Environment Variables
 
@@ -51,87 +57,77 @@ ADMIN_EMAIL=admin@bdmedical.com
 ADMIN_PASSWORD=admin123
 ```
 
-- `PORT` is optional. If omitted, the server uses `3000`.
-- `JWT_SECRET` is required for login and token verification.
-- `ADMIN_EMAIL` and `ADMIN_PASSWORD` are optional. If omitted, the app uses the defaults shown above and creates the admin user automatically on first run.
+- `PORT` is optional (default `3000`).
+- `JWT_SECRET` is **required** — use any long random string. The server exits with a clear error if it is missing.
+- `ADMIN_EMAIL` and `ADMIN_PASSWORD` are optional. The admin user is created automatically on first run using these values (or the defaults shown).
 
 ## Database Setup
 
-The database is created automatically the first time the server starts. The initialization step creates the required tables and ensures an admin account exists.
+The database is created automatically the first time the server starts. Initialization creates all tables, ensures the admin account exists, and runs migrations (e.g., adding price/stock columns and assigning prices to older databases).
 
-If you want to load sample data, run the seed scripts after installation:
+To load sample data, run the seed scripts after installation:
 
 ```bash
-npm run seed
-npm run seed-modules
-npm run import-dims
+npm run seed          # medicines and doctors
+npm run seed-modules  # diseases, guidelines, investigation centers
+npm run import-dims   # additional medicine data
 ```
 
-These scripts populate the database with medical content such as medicines, doctors, diseases, guidelines, and investigation centers.
+Seed scripts are idempotent and only insert missing records.
 
 ## Run the Project
-
-Start the application with:
 
 ```bash
 npm start
 ```
 
-Then open:
+Then open `http://localhost:3000`. The server serves the static frontend from `public/` and exposes the API under `/api`.
 
-```text
-http://localhost:3000
-```
-
-The server serves the static frontend from the `public/` folder and exposes the API under `/api`.
-
-## Available Scripts
-
-- `npm start` - starts the server
-- `npm run dev` - starts the server in the same way as `start`
-- `npm run seed` - seeds medicines and doctors
-- `npm run seed-modules` - seeds diseases, guidelines, and investigation centers
-- `npm run import-dims` - imports additional medicine data
+> **Important:** never run two instances of the server at the same time. The app writes its entire in-memory database to `database/medical.db` every 5 seconds, so a second instance will silently overwrite the first one's data. If you see an `EADDRINUSE` error on startup, a previous instance is still running — stop it first:
+>
+> ```powershell
+> Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess -Force
+> ```
 
 ## Main Pages
 
-The frontend includes these pages under `public/`:
-
-- Home: `index.html`
-- Login and registration: `login.html`, `register.html`
-- Doctor directory: `doctors.html`
-- Medicine directory: `medicines.html`
-- Disease knowledge base: `diseases.html`
-- Medical guidelines: `guidelines.html`
-- Investigation centers: `investigations.html`
-- AI assistant/chat: `chatbot.html`
-- Shopping cart and checkout: `cart.html`
-- Dashboard (with order history): `dashboard.html`
-- Admin panel (with order management): `admin.html`
+| Page | File | Access |
+|---|---|---|
+| Home | `index.html` | Public |
+| Login / Register | `login.html`, `register.html` | Public |
+| Medicine directory & shop | `medicines.html` | Browse public; buying requires login |
+| Shopping cart & checkout | `cart.html` | Registered users |
+| Doctor directory | `doctors.html` | Browse public; favorites/reviews require login |
+| Disease knowledge base | `diseases.html` | Public |
+| Medical guidelines | `guidelines.html` | Public |
+| Investigation centers | `investigations.html` | Public |
+| AI assistant | `chatbot.html` | Registered users |
+| Dashboard (stats, favorites, order history) | `dashboard.html` | Registered users |
+| Admin panel (CRUD + order management) | `admin.html` | Admin only |
 
 ## API Overview
 
-The server mounts these API groups:
+| Group | Purpose |
+|---|---|
+| `/api/auth` | Register, login, current user |
+| `/api/medicines` | Medicine CRUD, search, categories, cheaper-alternative recommendations (`/:id/related`) |
+| `/api/doctors` | Doctor CRUD, search, locations, specialties |
+| `/api/chat` | AI assistant (requires login) and chat history |
+| `/api/favorites` | Favorite doctors |
+| `/api/reviews` | Doctor ratings and reviews |
+| `/api/diseases` | Disease CRUD with related doctors/investigations |
+| `/api/guidelines` | Guideline CRUD, national/international filter |
+| `/api/investigations` | Investigation center CRUD |
+| `/api/cart` | Cart items (add, update quantity, remove, clear) |
+| `/api/orders` | Checkout, order history, admin order list, status updates |
 
-- `/api/auth`
-- `/api/medicines`
-- `/api/doctors`
-- `/api/chat`
-- `/api/favorites`
-- `/api/reviews`
-- `/api/diseases`
-- `/api/guidelines`
-- `/api/investigations`
-- `/api/cart`
-- `/api/orders`
-
-Authentication uses Bearer tokens. Protected endpoints expect the `Authorization: Bearer <token>` header.
+Authentication uses Bearer tokens: protected endpoints expect the `Authorization: Bearer <token>` header. All write operations on catalog data (medicines, doctors, diseases, guidelines, investigation centers) and order status updates require the admin role.
 
 ## Project Structure
 
 ```text
-database/      Database bootstrap and seed scripts
-middleware/    Auth middleware
+database/      Database bootstrap, migrations, and seed scripts
+middleware/    Auth middleware (JWT verification, admin check)
 public/        Static frontend pages, CSS, and JavaScript
 routes/        Express route handlers
 server.js      Application entry point
@@ -139,16 +135,18 @@ server.js      Application entry point
 
 ## Notes
 
-- The app uses a local SQLite file at `database/medical.db`.
-- Seed scripts are idempotent and only insert missing records.
+- The app uses a local SQLite file at `database/medical.db`, saved every 5 seconds and on shutdown.
 - API requests are rate limited under `/api/` to help prevent abuse.
-- If the JWT secret is missing or incorrect, login and protected endpoints will fail.
+- Placing an order snapshots each item's name and price into `order_items`, so past orders remain accurate even if a medicine is later edited or deleted.
+- Deleting a medicine also removes it from user carts; deleting a doctor removes their favorites and reviews.
 
 ## Troubleshooting
 
-- If the server fails to start, confirm that `JWT_SECRET` is set in `.env`.
-- If you do not see seeded data, run the seed scripts again after the database is initialized.
-- If you change admin credentials in `.env`, delete `database/medical.db` only if you want to recreate the local database from scratch.
+- **Server exits immediately** — `JWT_SECRET` is missing from `.env`.
+- **`EADDRINUSE` on startup** — a previous server instance is still running; stop it (see Run the Project).
+- **"Login failed."** — usually means the server started without a valid `JWT_SECRET` (older versions) or the token secret changed; log in again to get a fresh token.
+- **No seeded data** — run the seed scripts after the database is initialized.
+- Changing admin credentials in `.env` only affects a fresh database; delete `database/medical.db` if you want to recreate it from scratch.
 
 ## License
 

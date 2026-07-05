@@ -231,7 +231,7 @@ function generateResponse(message) {
   };
 }
 
-router.post('/', (req, res) => {
+router.post('/', authenticateToken, (req, res) => {
   try {
     const { message } = req.body;
     if (!message || !message.trim()) {
@@ -240,19 +240,8 @@ router.post('/', (req, res) => {
 
     const response = generateResponse(message.trim());
 
-    const userId = req.headers['authorization'] ? (() => {
-      try {
-        const jwt = require('jsonwebtoken');
-        const token = req.headers['authorization'].split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        return decoded.id;
-      } catch { return null; }
-    })() : null;
-
-    if (userId) {
-      runQuery('INSERT INTO chat_logs (user_id, message, response) VALUES (?, ?, ?)',
-        [userId, message, response.text]);
-    }
+    runQuery('INSERT INTO chat_logs (user_id, message, response) VALUES (?, ?, ?)',
+      [req.user.id, message, response.text]);
 
     res.json({ response: response.text, doctors: response.doctors, medicines: response.medicines });
   } catch (err) {

@@ -73,6 +73,8 @@
 
   <script src="js/app.js"></script>
   <script>
+    if (!isLoggedIn()) window.location.href = '/login.html';
+
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
