@@ -1,5 +1,19 @@
 const API = '';
 
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  const button = input.nextElementSibling;
+  const icon = button.querySelector('.material-icons');
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.textContent = 'visibility_off';
+  } else {
+    input.type = 'password';
+    icon.textContent = 'visibility';
+  }
+}
+
 function getToken() { return localStorage.getItem('token'); }
 function getUser() {
   const u = localStorage.getItem('user');
