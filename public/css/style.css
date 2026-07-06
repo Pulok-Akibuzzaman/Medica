@@ -204,7 +204,14 @@ a:hover { color: var(--primary-dark); }
 
 /* Hero */
 .hero {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+   background:
+    linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+    url("stethoscope.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
   color: white;
   padding: 5rem 2rem;
   text-align: center;
