@@ -39,14 +39,15 @@ async function start() {
   app.use('/api/investigations', require('./routes/investigations'));
   app.use('/api/cart', require('./routes/cart'));
   app.use('/api/orders', require('./routes/orders'));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  });
+  app.use('/api/reminders', require('./routes/reminders'));
 
   app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
+  });
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 
   app.listen(PORT, () => {

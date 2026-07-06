@@ -819,6 +819,33 @@ textarea { resize: vertical; min-height: 100px; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.alert.fade-out {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }

@@ -142,7 +142,10 @@ function showAlert(container, message, type = 'error') {
   div.className = `alert alert-${type}`;
   div.textContent = message;
   container.prepend(div);
-  setTimeout(() => div.remove(), 5000);
+  setTimeout(() => {
+    div.classList.add('fade-out');
+    setTimeout(() => div.remove(), 500);
+  }, 4500);
 }
 
 function renderStars(rating) {

@@ -193,6 +193,21 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS medicine_reminders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      medicine_name TEXT NOT NULL,
+      dosage TEXT,
+      reminder_time TEXT NOT NULL,
+      days_of_week TEXT DEFAULT 'daily',
+      is_active INTEGER DEFAULT 1,
+      last_notified DATETIME,
+      snoozed_until DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   migrateMedicinePrices(db);
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
