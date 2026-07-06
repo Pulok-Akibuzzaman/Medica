@@ -67,17 +67,81 @@ async function seed() {
     }
   }
 
+  const diseases = [
+    { name: 'Diabetes Mellitus', category: 'Endocrine', overview: 'Chronic disease affecting blood glucose regulation.', causes: 'Genetic factors, obesity, sedentary lifestyle, autoimmune destruction of beta cells.', symptoms: 'Increased thirst, frequent urination, fatigue, blurred vision, slow wound healing.', risk_factors: 'Family history, age over 45, obesity, hypertension, physical inactivity.', diagnosis: 'Fasting blood glucose, HbA1c, random blood glucose, oral glucose tolerance test.', treatment: 'Lifestyle modifications, medications (metformin, sulfonylureas, insulin), regular monitoring.', prevention: 'Healthy diet, regular exercise, weight management, stress reduction.', related_specialties: 'Endocrinology, Internal Medicine' },
+    { name: 'Hypertension', category: 'Cardiovascular', overview: 'Elevated blood pressure affecting cardiovascular health.', causes: 'Obesity, excessive sodium intake, stress, alcohol consumption, genetic predisposition.', symptoms: 'Often asymptomatic, but may cause headaches, dizziness, chest pain, shortness of breath.', risk_factors: 'Age, family history, obesity, excessive alcohol, sedentary lifestyle, diabetes.', diagnosis: 'Blood pressure measurement, ECG, kidney function tests, lipid profile.', treatment: 'Lifestyle changes, antihypertensive medications (ACE inhibitors, beta-blockers, diuretics).', prevention: 'Reduce sodium intake, regular exercise, stress management, weight loss, limit alcohol.', related_specialties: 'Cardiology, Internal Medicine' },
+    { name: 'Asthma', category: 'Respiratory', overview: 'Chronic inflammatory disease of the airways causing breathing difficulties.', causes: 'Genetic factors, allergies, air pollution, respiratory infections, occupational exposure.', symptoms: 'Wheezing, shortness of breath, chest tightness, coughing especially at night.', risk_factors: 'Family history, allergies, obesity, air pollution exposure, gastroesophageal reflux.', diagnosis: 'Spirometry, peak flow measurement, bronchial challenge tests, allergy testing.', treatment: 'Inhalers (rescue and maintenance), corticosteroids, leukotriene antagonists, immunotherapy.', prevention: 'Avoid triggers, maintain healthy weight, control allergies, avoid air pollution.', related_specialties: 'Pulmonology, Internal Medicine, Allergology' },
+    { name: 'Gastroesophageal Reflux Disease (GERD)', category: 'Gastric', overview: 'Chronic disease where stomach acid flows back into the esophagus.', causes: 'Weak lower esophageal sphincter, obesity, pregnancy, alcohol consumption, smoking.', symptoms: 'Heartburn, regurgitation, chest pain, difficulty swallowing, chronic cough.', risk_factors: 'Obesity, smoking, alcohol consumption, large meals, lying down after eating.', diagnosis: 'Endoscopy, pH monitoring, barium x-ray, manometry.', treatment: 'Proton pump inhibitors, H2-receptor antagonists, antacids, lifestyle modifications.', prevention: 'Avoid trigger foods, eat smaller meals, elevate head while sleeping, weight management.', related_specialties: 'Gastroenterology, Internal Medicine' },
+    { name: 'Pneumonia', category: 'Respiratory', overview: 'Infection causing inflammation of lung alveoli and fluid accumulation.', causes: 'Bacterial (Streptococcus pneumoniae), viral, fungal pathogens, aspiration.', symptoms: 'Fever, cough with productive sputum, chest pain, shortness of breath, fatigue.', risk_factors: 'Smoking, chronic lung disease, immunosuppression, hospitalization, age extremes.', diagnosis: 'Chest X-ray, sputum culture, blood culture, CBC with differential.', treatment: 'Antibiotics (based on causative organism), oxygen therapy, supportive care.', prevention: 'Vaccination (pneumococcal, influenza), avoid smoking, hand hygiene, avoid respiratory irritants.', related_specialties: 'Pulmonology, Infectious Disease, Internal Medicine' },
+    { name: 'Myocardial Infarction (Heart Attack)', category: 'Cardiovascular', overview: 'Acute necrosis of heart muscle due to interrupted blood supply.', causes: 'Atherosclerosis, thrombosis, coronary artery spasm, plaque rupture.', symptoms: 'Severe chest pain, shortness of breath, diaphoresis, nausea, palpitations.', risk_factors: 'Hypertension, hyperlipidemia, diabetes, smoking, family history, male gender.', diagnosis: 'ECG, troponin levels, myoglobin, echocardiography, coronary angiography.', treatment: 'Aspirin, antiplatelet agents, anticoagulants, beta-blockers, ACE inhibitors, revascularization.', prevention: 'Control risk factors, healthy diet, regular exercise, stress management, smoking cessation.', related_specialties: 'Cardiology, Emergency Medicine, Interventional Cardiology' }
+  ];
+
+  let diseaseCount = 0;
+  for (const d of diseases) {
+    const exists = getOne('SELECT id FROM diseases WHERE name = ?', [d.name]);
+    if (!exists) {
+      runQuery(
+        'INSERT INTO diseases (name, category, overview, causes, symptoms, risk_factors, diagnosis, treatment, prevention, related_specialties) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [d.name, d.category, d.overview, d.causes, d.symptoms, d.risk_factors, d.diagnosis, d.treatment, d.prevention, d.related_specialties]
+      );
+      diseaseCount++;
+    }
+  }
+
+  const guidelines = [
+    { title: 'Management of Hypertension in Adults', description: 'Evidence-based guidelines for screening, diagnosis, and treatment of hypertension in adult populations.', type: 'national', category: 'Cardiovascular', authority: 'Bangladesh Medical and Dental Council', publication_date: '2020-01-15', link: 'https://bmdc.org.bd/guidelines' },
+    { title: 'Diabetes Prevention and Management', description: 'Comprehensive guidelines for prevention, screening, and management of diabetes mellitus types 1 and 2.', type: 'international', category: 'Endocrine', authority: 'World Health Organization (WHO)', publication_date: '2021-06-10', link: 'https://who.int/diabetes' },
+    { title: 'Asthma Management Guidelines', description: 'Stepwise approach to asthma diagnosis, treatment, and control based on severity and control levels.', type: 'international', category: 'Respiratory', authority: 'Global Initiative for Asthma (GINA)', publication_date: '2022-11-01', link: 'https://ginasthma.org' },
+    { title: 'GERD Treatment and Lifestyle Modifications', description: 'Clinical practice guidelines for the management of gastroesophageal reflux disease in primary and secondary care.', type: 'national', category: 'Gastric', authority: 'Bangladesh Society of Gastroenterology', publication_date: '2019-03-20', link: 'https://bdsg.org.bd' },
+    { title: 'Community-Acquired Pneumonia Management', description: 'Guidelines for diagnosis, investigation, and antimicrobial therapy of community-acquired pneumonia.', type: 'international', category: 'Respiratory', authority: 'American Thoracic Society', publication_date: '2021-02-14', link: 'https://ats.org' }
+  ];
+
+  let guidelineCount = 0;
+  for (const g of guidelines) {
+    const exists = getOne('SELECT id FROM guidelines WHERE title = ?', [g.title]);
+    if (!exists) {
+      runQuery(
+        'INSERT INTO guidelines (title, description, type, category, authority, publication_date, link) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [g.title, g.description, g.type, g.category, g.authority, g.publication_date, g.link]
+      );
+      guidelineCount++;
+    }
+  }
+
+  const investigations = [
+    { name: 'Dhaka Diagnostic Center', location: 'Dhanmondi', address: '456 Satmasjid Road, Dhanmondi, Dhaka 1205', available_tests: 'Blood tests, ECG, Ultrasound, Endoscopy, CT scan, MRI, X-ray', contact: '+880-2-9666999', opening_hours: 'Monday-Sunday: 8 AM - 8 PM' },
+    { name: 'LabCare Bangladesh', location: 'Gulshan', address: '78 Gulshan Avenue, Gulshan 2, Dhaka 1212', available_tests: 'Complete blood count, Biochemistry, Hormone tests, Genetic testing, Pathology', contact: '+880-2-9858585', opening_hours: 'Monday-Sunday: 7 AM - 9 PM' },
+    { name: 'Chittagong Medical Diagnostics', location: 'Chittagong', address: '123 Agrabad Commercial Area, Chittagong 4000', available_tests: 'X-ray, Ultrasound, ECG, Blood tests, Endoscopy, Colonoscopy', contact: '+880-31-2866666', opening_hours: 'Monday-Friday: 8 AM - 6 PM, Saturday-Sunday: 9 AM - 4 PM' },
+    { name: 'Sylhet Path Lab', location: 'Sylhet', address: '89 Medical Road, Sylhet 3100', available_tests: 'Blood tests, Urine tests, Culture and sensitivity, Histopathology', contact: '+880-821-714523', opening_hours: 'Monday-Sunday: 8 AM - 7 PM' },
+    { name: 'Rajshahi Imaging Center', location: 'Rajshahi', address: '234 Motihar Road, Rajshahi 6000', available_tests: 'CT scan, MRI, Ultrasound, X-ray, Echocardiography', contact: '+880-721-774444', opening_hours: 'Monday-Friday: 9 AM - 5 PM, Saturday: 10 AM - 2 PM' }
+  ];
+
+  let investigationCount = 0;
+  for (const inv of investigations) {
+    const exists = getOne('SELECT id FROM investigation_centers WHERE name = ?', [inv.name]);
+    if (!exists) {
+      runQuery(
+        'INSERT INTO investigation_centers (name, location, address, available_tests, contact, opening_hours) VALUES (?, ?, ?, ?, ?, ?)',
+        [inv.name, inv.location, inv.address, inv.available_tests, inv.contact, inv.opening_hours]
+      );
+      investigationCount++;
+    }
+  }
+
   saveDb();
 
   const totalMeds = getOne('SELECT COUNT(*) as c FROM medicines');
   const totalDocs = getOne('SELECT COUNT(*) as c FROM doctors');
+  const totalDiseases = getOne('SELECT COUNT(*) as c FROM diseases');
+  const totalGuidelines = getOne('SELECT COUNT(*) as c FROM guidelines');
+  const totalInvestigations = getOne('SELECT COUNT(*) as c FROM investigation_centers');
 
-  if (medCount > 0 || docCount > 0) {
-    console.log(`Seeded ${medCount} new medicines and ${docCount} new doctors.`);
+  if (medCount > 0 || docCount > 0 || diseaseCount > 0 || guidelineCount > 0 || investigationCount > 0) {
+    console.log(`Seeded ${medCount} new medicines, ${docCount} new doctors, ${diseaseCount} new diseases, ${guidelineCount} new guidelines, and ${investigationCount} new investigation centers.`);
   } else {
     console.log('Database already has seed data — no new records inserted.');
   }
-  console.log(`Total: ${totalMeds.c} medicines, ${totalDocs.c} doctors in database.`);
+  console.log(`Total: ${totalMeds.c} medicines, ${totalDocs.c} doctors, ${totalDiseases.c} diseases, ${totalGuidelines.c} guidelines, ${totalInvestigations.c} investigation centers.`);
 
   setTimeout(() => process.exit(0), 100);
 }

@@ -65,15 +65,13 @@ ADMIN_PASSWORD=admin123
 
 The database is created automatically the first time the server starts. Initialization creates all tables, ensures the admin account exists, and runs migrations (e.g., adding price/stock columns and assigning prices to older databases).
 
-To load sample data, run the seed scripts after installation:
+To load sample data, run the seed script after installation:
 
 ```bash
-npm run seed          # medicines and doctors
-npm run seed-modules  # diseases, guidelines, investigation centers
-npm run import-dims   # additional medicine data
+npm run seed
 ```
 
-Seed scripts are idempotent and only insert missing records.
+This seeds the database with medicines, doctors, diseases, guidelines, and investigation centers. The seed script is idempotent — run it multiple times without worry, as it only inserts records that don't already exist.
 
 ## Run the Project
 
