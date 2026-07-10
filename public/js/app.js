@@ -86,6 +86,42 @@ function updateNav() {
   }
 }
 
+// Update navigation links with i18n data attributes
+function initNavTranslations() {
+  // Map nav links to translation keys
+  const navMappings = [
+    { href: 'index.html', key: 'nav_home' },
+    { href: 'medicines.html', key: 'nav_medicines' },
+    { href: 'doctors.html', key: 'nav_doctors' },
+    { href: 'diseases.html', key: 'nav_diseases' },
+    { href: 'investigations.html', key: 'nav_investigations' },
+    { href: 'chatbot.html', key: 'nav_assistant' },
+    { href: 'admin.html', key: 'nav_admin' }
+  ];
+
+  navMappings.forEach(({ href, key }) => {
+    const link = Array.from(document.querySelectorAll('.nav-links a')).find(a =>
+      a.getAttribute('href') === href
+    );
+    if (link) link.setAttribute('data-i18n', key);
+  });
+
+  // Set auth button translations
+  const loginBtn = Array.from(document.querySelectorAll('.btn')).find(b =>
+    b.textContent.includes('Login')
+  );
+  if (loginBtn) loginBtn.setAttribute('data-i18n', 'nav_login');
+
+  const registerBtn = Array.from(document.querySelectorAll('.btn')).find(b =>
+    b.textContent.includes('Register')
+  );
+  if (registerBtn) registerBtn.setAttribute('data-i18n', 'nav_register');
+
+  if (typeof i18n !== 'undefined') {
+    i18n.updatePageLanguage();
+  }
+}
+
 function formatPrice(price) {
   return `৳${Number(price || 0).toFixed(2)}`;
 }
@@ -230,6 +266,7 @@ function simpleMarkdown(text) {
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   updateNav();
+  initNavTranslations();
 
   const hamburger = document.getElementById('hamburger');
   const navLinks = document.getElementById('nav-links');

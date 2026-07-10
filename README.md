@@ -14,6 +14,7 @@ Medica is a Bangladesh-focused medical information, doctor finder, and e-pharmac
 - AI health assistant (registered users only) — rule-based symptom analysis that suggests specialties, doctors, and general advice, with per-user chat history
 - User registration, login, and JWT-based authentication
 - Admin panel with full add/edit/delete for medicines, doctors, diseases, guidelines, and investigation centers, plus order/shipping management
+- **Bangla language support** — Switch between English and Bangla (বাংলা) with persistent language preferences
 - Persistent local database stored in `database/medical.db`
 
 ## User Roles
@@ -130,6 +131,12 @@ public/        Static frontend pages, CSS, and JavaScript
 routes/        Express route handlers
 server.js      Application entry point
 ```
+
+## Language & Localization
+
+The app includes full **Bangla (Bengali) language support**. Users can switch between English and Bangla using the language switcher button in the navigation bar. The chosen language is saved automatically.
+
+For detailed translation documentation, see [public/TRANSLATIONS.md](public/TRANSLATIONS.md).
 
 ## Notes
 

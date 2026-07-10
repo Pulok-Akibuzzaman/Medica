@@ -1069,6 +1069,39 @@ textarea { resize: vertical; min-height: 100px; }
 /* Admin tabs overflow */
 .admin-tabs { flex-wrap: wrap; }
 
+/* Language Switcher */
+.language-switcher {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  margin: 0 0.5rem;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--text-light);
+  transition: var(--transition);
+}
+
+.lang-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.lang-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .hero { padding: 3rem 1rem; }
@@ -1081,4 +1114,6 @@ textarea { resize: vertical; min-height: 100px; }
   .stat-cards { grid-template-columns: repeat(2, 1fr); }
   .modal { padding: 1.5rem; }
   .grid-3 { grid-template-columns: 1fr; }
+  .language-switcher { margin: 0 0.25rem; }
+  .lang-btn { padding: 0.3rem 0.5rem; font-size: 0.75rem; }
 }
