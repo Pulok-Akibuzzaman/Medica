@@ -6,6 +6,7 @@
   <title>Investigation Centers - Medica</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -45,36 +46,36 @@
   <div class="container">
     <div class="disclaimer-banner">⚠️ This information is for educational purposes only. Please consult a licensed doctor for medical advice.</div>
 
-    <h1 class="page-title">Investigation & Diagnostic Centers</h1>
-    <p class="page-subtitle">Find diagnostic and test centers across Bangladesh</p>
+    <h1 class="page-title" data-i18n="investigations_title">Investigation & Diagnostic Centers</h1>
+    <p class="page-subtitle" data-i18n="investigations_subtitle">Find diagnostic and test centers across Bangladesh</p>
 
     <div class="search-section">
       <div class="search-row">
         <div class="search-group" style="flex:2">
-          <label>Search Centers</label>
-          <input type="text" id="search-input" placeholder="Search by name, test type, or address...">
+          <label data-i18n="medicines_search_label">Search Centers</label>
+          <input type="text" id="search-input" data-i18n="investigations_search_placeholder" placeholder="Search by name, test type, or address...">
         </div>
         <div class="search-group">
-          <label>Location</label>
+          <label data-i18n="doctors_location_label">Location</label>
           <select id="location-filter">
-            <option value="all">All Locations</option>
+            <option value="all" data-i18n="doctors_location_all">All Locations</option>
           </select>
         </div>
         <div class="search-group">
-          <label>Test Type</label>
+          <label data-i18n="investigations_test_type_label">Test Type</label>
           <select id="test-filter">
-            <option value="all">All Tests</option>
+            <option value="all" data-i18n="investigations_test_type_all">All Tests</option>
           </select>
         </div>
         <div class="search-group" style="flex:0">
           <label>&nbsp;</label>
-          <button class="btn btn-primary" onclick="searchCenters()">Search</button>
+          <button class="btn btn-primary" onclick="searchCenters()" data-i18n="medicines_search_btn">Search</button>
         </div>
       </div>
     </div>
 
     <div id="centers-grid" class="grid grid-2">
-      <p class="loading">Loading investigation centers...</p>
+      <p class="loading" data-i18n="investigations_loading">Loading investigation centers...</p>
     </div>
 
     <div class="pagination" id="pagination"></div>
@@ -85,7 +86,7 @@
     <div class="modal" style="max-width:600px">
       <div id="center-detail"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeCenterModal()">Close</button>
+        <button class="btn btn-secondary" onclick="closeCenterModal()" data-i18n="common_close">Close</button>
       </div>
     </div>
   </div>
@@ -156,7 +157,7 @@
                 ${hasMore ? '<span class="test-tag">+more</span>' : ''}
               </div>
               <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border)">
-                <button class="btn btn-sm btn-secondary" onclick="showCenter(${c.id})">View Details</button>
+                <button class="btn btn-sm btn-secondary" onclick="showCenter(${c.id})">${i18n.t('common_view_details')}</button>
               </div>
             </div>
           `;
@@ -183,19 +184,19 @@
         document.getElementById('center-detail').innerHTML = `
           <h2 style="font-size:1.3rem;margin-bottom:1rem">${c.name}</h2>
           <div class="detail-section">
-            <h3>📍 Location & Address</h3>
+            <h3>📍 ${i18n.t('investigation_location_address')}</h3>
             <p>${c.address}, ${c.location}</p>
           </div>
           <div class="detail-section">
-            <h3>📞 Contact</h3>
+            <h3>📞 ${i18n.t('investigation_contact')}</h3>
             <p>${c.contact}</p>
           </div>
           <div class="detail-section">
-            <h3>🕐 Opening Hours</h3>
+            <h3>🕐 ${i18n.t('investigation_hours')}</h3>
             <p>${c.opening_hours}</p>
           </div>
           <div class="detail-section">
-            <h3>🔬 Available Tests</h3>
+            <h3>🔬 ${i18n.t('investigation_tests')}</h3>
             <div class="center-tests" style="margin-top:0.5rem">
               ${tests.map(t => `<span class="test-tag" style="font-size:0.82rem;padding:0.25rem 0.65rem">${t}</span>`).join('')}
             </div>
@@ -220,5 +221,6 @@
       loadCenters();
     });
   </script>
+  <script src="js/language-switcher.js"></script>
 </body>
 </html>

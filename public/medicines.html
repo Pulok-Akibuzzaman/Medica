@@ -44,30 +44,30 @@
   </nav>
 
   <div class="container">
-    <h1 class="page-title">Medicine Database</h1>
-    <p class="page-subtitle">Browse and search medicine information</p>
+    <h1 class="page-title" data-i18n="medicines_title">Medicine Database</h1>
+    <p class="page-subtitle" data-i18n="medicines_subtitle">Browse and search medicine information</p>
 
     <div class="search-section">
       <div class="search-row">
         <div class="search-group" style="flex:2">
-          <label>Search Medicines</label>
-          <input type="text" id="search-input" placeholder="Search by name, generic name, or use...">
+          <label data-i18n="medicines_search_label">Search Medicines</label>
+          <input type="text" id="search-input" data-i18n="medicines_search_placeholder" placeholder="Search by name, generic name, or use...">
         </div>
         <div class="search-group">
-          <label>Category</label>
+          <label data-i18n="medicines_category_label">Category</label>
           <select id="category-filter">
-            <option value="all">All Categories</option>
+            <option value="all" data-i18n="medicines_category_all">All Categories</option>
           </select>
         </div>
         <div class="search-group" style="flex:0">
           <label>&nbsp;</label>
-          <button class="btn btn-primary" onclick="searchMedicines()">Search</button>
+          <button class="btn btn-primary" onclick="searchMedicines()" data-i18n="medicines_search_btn">Search</button>
         </div>
       </div>
     </div>
 
     <div id="medicines-grid" class="grid grid-3">
-      <p class="loading">Loading medicines...</p>
+      <p class="loading" data-i18n="medicines_loading">Loading medicines...</p>
     </div>
 
     <div class="pagination" id="pagination"></div>
@@ -78,7 +78,7 @@
     <div class="modal" style="max-width:640px">
       <div id="medicine-detail"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeMedicineModal()">Close</button>
+        <button class="btn btn-secondary" onclick="closeMedicineModal()" data-i18n="common_close">Close</button>
       </div>
     </div>
   </div>
@@ -129,7 +129,7 @@
             <p class="uses">${m.uses}</p>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
               <strong style="color:var(--primary)">${formatPrice(m.price)}</strong>
-              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();quickAddToCart(${m.id}, this)">🛒 Add to Cart</button>
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();quickAddToCart(${m.id}, this)">🛒 ${i18n.t('medicine_add_to_cart')}</button>
             </div>
           </div>
         `).join('');
@@ -178,23 +178,23 @@
             </div>
             <div style="display:flex;align-items:center;gap:0.5rem">
               <input type="number" id="modal-qty" value="1" min="1" max="${m.stock}" style="width:70px">
-              <button class="btn btn-primary btn-sm" ${m.stock <= 0 ? 'disabled' : ''} onclick="modalAddToCart(${m.id}, this)">🛒 Add to Cart</button>
+              <button class="btn btn-primary btn-sm" ${m.stock <= 0 ? 'disabled' : ''} onclick="modalAddToCart(${m.id}, this)">🛒 ${i18n.t('medicine_add_to_cart')}</button>
             </div>
           </div>
           <div class="detail-section">
-            <h3>📋 Uses</h3>
+            <h3>📋 ${i18n.t('medicine_uses')}</h3>
             <p>${m.uses}</p>
           </div>
           <div class="detail-section">
-            <h3>💉 Dosage</h3>
+            <h3>💉 ${i18n.t('medicine_dosage')}</h3>
             <p>${m.dosage}</p>
           </div>
           <div class="detail-section">
-            <h3>⚠️ Side Effects</h3>
+            <h3>⚠️ ${i18n.t('medicine_side_effects')}</h3>
             <p>${m.side_effects}</p>
           </div>
           <div class="detail-section">
-            <h3 style="color:var(--danger)">🚨 Warnings</h3>
+            <h3 style="color:var(--danger)">🚨 ${i18n.t('medicine_warnings')}</h3>
             <div class="warning-box">${m.warnings}</div>
           </div>
           <div class="detail-section" id="related-section" style="display:none">
@@ -239,7 +239,7 @@
         const added = await addToCart(id, qty);
         if (added && btn) {
           btn.textContent = '✓ Added';
-          setTimeout(() => { btn.textContent = '🛒 Add to Cart'; }, 1500);
+          setTimeout(() => { btn.textContent = '🛒 ' + i18n.t('medicine_add_to_cart'); }, 1500);
         }
       } catch (err) {
         alert(err.message);

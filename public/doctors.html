@@ -6,6 +6,7 @@
   <title>Doctors - Medica</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -43,36 +44,36 @@
   </nav>
 
   <div class="container">
-    <h1 class="page-title">Doctor Directory</h1>
-    <p class="page-subtitle">Find trusted doctors across Bangladesh</p>
+    <h1 class="page-title" data-i18n="doctors_title">Doctor Directory</h1>
+    <p class="page-subtitle" data-i18n="doctors_subtitle">Find trusted doctors across Bangladesh</p>
 
     <div class="search-section">
       <div class="search-row">
         <div class="search-group" style="flex:2">
-          <label>Search Doctors</label>
-          <input type="text" id="search-input" placeholder="Search by name, hospital, or specialty...">
+          <label data-i18n="doctors_search_label">Search Doctors</label>
+          <input type="text" id="search-input" data-i18n="doctors_search_placeholder" placeholder="Search by name, hospital, or specialty...">
         </div>
         <div class="search-group">
-          <label>Location</label>
+          <label data-i18n="doctors_location_label">Location</label>
           <select id="location-filter">
-            <option value="all">All Locations</option>
+            <option value="all" data-i18n="doctors_location_all">All Locations</option>
           </select>
         </div>
         <div class="search-group">
-          <label>Specialty</label>
+          <label data-i18n="doctors_specialty_label">Specialty</label>
           <select id="specialty-filter">
-            <option value="all">All Specialties</option>
+            <option value="all" data-i18n="doctors_specialty_all">All Specialties</option>
           </select>
         </div>
         <div class="search-group" style="flex:0">
           <label>&nbsp;</label>
-          <button class="btn btn-primary" onclick="searchDoctors()">Search</button>
+          <button class="btn btn-primary" onclick="searchDoctors()" data-i18n="doctors_search_btn">Search</button>
         </div>
       </div>
     </div>
 
     <div id="doctors-grid" class="grid grid-2">
-      <p class="loading">Loading doctors...</p>
+      <p class="loading" data-i18n="doctors_loading">Loading doctors...</p>
     </div>
 
     <div class="pagination" id="pagination"></div>
@@ -88,10 +89,10 @@
   <!-- Review Modal -->
   <div class="modal-overlay hidden" id="review-modal">
     <div class="modal">
-      <h2>Write a Review</h2>
+      <h2 data-i18n="doctor_write_review">Write a Review</h2>
       <div id="review-alert"></div>
       <div class="form-group">
-        <label>Rating</label>
+        <label data-i18n="doctor_rating">Rating</label>
         <div class="star-input" id="star-input">
           <span data-val="1" onclick="setRating(1)">☆</span>
           <span data-val="2" onclick="setRating(2)">☆</span>
@@ -105,8 +106,8 @@
         <textarea id="review-comment" placeholder="Share your experience..."></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+        <button class="btn btn-secondary" onclick="closeReviewModal()" data-i18n="admin_cancel">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReview()" data-i18n="doctor_submit_review">Submit Review</button>
       </div>
     </div>
   </div>
@@ -182,10 +183,10 @@
               </div>
             </div>
             <div class="doctor-actions">
-              <button class="btn btn-sm btn-secondary" onclick="showDoctor(${d.id})">View Details</button>
+              <button class="btn btn-sm btn-secondary" onclick="showDoctor(${d.id})">${i18n.t('common_view_details')}</button>
               ${isLoggedIn() ? `
                 <button class="fav-btn" id="fav-${d.id}" onclick="toggleFavorite(${d.id})" title="Add to favorites">♡</button>
-                <button class="btn btn-sm btn-secondary" onclick="openReviewModal(${d.id})">Rate</button>
+                <button class="btn btn-sm btn-secondary" onclick="openReviewModal(${d.id})">${i18n.t('doctor_rate')}</button>
               ` : ''}
             </div>
           </div>
@@ -229,20 +230,20 @@
             </div>
           </div>
           <div class="detail-section">
-            <h3>🏥 Hospital / Clinic</h3>
+            <h3>🏥 ${i18n.t('doctor_hospital')}</h3>
             <p>${d.hospital}</p>
           </div>
           <div class="detail-section">
-            <h3>📍 Location</h3>
+            <h3>📍 ${i18n.t('doctor_location')}</h3>
             <p>${d.location}</p>
           </div>
           <div class="detail-section">
-            <h3>📞 Contact</h3>
+            <h3>📞 ${i18n.t('doctor_contact')}</h3>
             <p>${d.contact}${d.email ? ' | ' + d.email : ''}</p>
           </div>
           ${reviews.length > 0 ? `
             <div class="detail-section">
-              <h3>⭐ Patient Reviews</h3>
+              <h3>⭐ ${i18n.t('doctor_reviews')}</h3>
               <div style="max-height:300px;overflow-y:auto">
                 ${reviews.map(r => `
                   <div class="review-card">
@@ -258,8 +259,8 @@
             </div>
           ` : '<p style="color:var(--text-light);margin-top:1rem">No reviews yet.</p>'}
           <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="closeDoctorModal()">Close</button>
-            ${isLoggedIn() ? `<button class="btn btn-primary" onclick="closeDoctorModal();openReviewModal(${d.id})">Write Review</button>` : ''}
+            <button class="btn btn-secondary" onclick="closeDoctorModal()">${i18n.t('common_close')}</button>
+            ${isLoggedIn() ? `<button class="btn btn-primary" onclick="closeDoctorModal();openReviewModal(${d.id})">${i18n.t('doctor_write_review')}</button>` : ''}
           </div>
         `;
         document.getElementById('doctor-modal').classList.remove('hidden');
@@ -352,5 +353,6 @@
       loadDoctors();
     });
   </script>
+  <script src="js/language-switcher.js"></script>
 </body>
 </html>

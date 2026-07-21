@@ -93,11 +93,14 @@ const translations = {
     doctor_add_favorite: 'Add to Favorites',
     doctor_remove_favorite: 'Remove from Favorites',
     doctor_write_review: 'Write Review',
+    doctor_rate: 'Rate',
+    doctor_submit_review: 'Submit Review',
     doctor_reviews: 'Reviews',
 
     // Diseases Page
     diseases_title: 'Disease Knowledge Base',
     diseases_subtitle: 'Learn about diseases, symptoms, and treatments',
+    diseases_search_label: 'Search Diseases',
     diseases_search_placeholder: 'Search diseases...',
     diseases_loading: 'Loading diseases...',
 
@@ -117,6 +120,8 @@ const translations = {
     guidelines_type_national: 'National Guidelines',
     guidelines_type_international: 'International Guidelines',
     guidelines_loading: 'Loading guidelines...',
+    guidelines_subtitle_national: 'National medical guidelines of Bangladesh',
+    guidelines_subtitle_international: 'International medical guidelines and standards',
 
     guideline_authority: 'Authority',
     guideline_publication_date: 'Publication Date',
@@ -127,6 +132,8 @@ const translations = {
     investigations_subtitle: 'Find diagnostic and test centers',
     investigations_search_placeholder: 'Search centers...',
     investigations_loading: 'Loading investigation centers...',
+    investigations_test_type_label: 'Test Type',
+    investigations_test_type_all: 'All Tests',
 
     investigation_location: 'Location',
     investigation_address: 'Address',
@@ -219,6 +226,59 @@ const translations = {
     common_delete_confirm: 'Are you sure you want to delete this item?',
     common_no_results: 'No results found',
     common_currency: '৳',
+    common_view_details: 'View Details',
+    common_open_link: 'Open Link',
+
+    // Disease Page (extra)
+    disease_important_notes: 'Important Notes',
+    disease_related_investigations: 'Related Investigation Centers',
+
+    // Guideline Page (extra)
+    guideline_description: 'Description',
+    guideline_source: 'Source',
+
+    // Investigation Page (extra)
+    investigation_location_address: 'Location & Address',
+
+    // Cart (extra)
+    cart_items_heading: 'Cart Items',
+    cart_order_summary: 'Order Summary',
+
+    // Dashboard (extra)
+    dashboard_quick_actions: 'Quick Actions',
+    dashboard_stat_favorites: 'Favorites',
+    dashboard_stat_chats: 'Chat Sessions',
+    dashboard_stat_orders: 'Orders',
+
+    // Reminders Page
+    reminders_page_title: 'Medicine Reminders',
+    reminders_subtitle: 'Stay on track with your medication schedule',
+    reminders_add_btn: 'Add Reminder',
+    reminders_notif_title: 'Browser Notifications',
+    reminders_notif_desc: 'Enable notifications to receive alerts when it\'s time to take your medicine. You can also test with the button below.',
+    reminders_enable_notif: 'Enable Notifications',
+    reminders_test_notif: 'Test Notification',
+    reminders_form_title: 'Add Medicine Reminder',
+    reminders_medicine_name_label: 'Medicine Name *',
+    reminders_dosage_label: 'Dosage (Optional)',
+    reminders_time_label: 'Reminder Time *',
+    reminders_frequency_label: 'Frequency',
+    reminders_save_btn: 'Save Reminder',
+    reminders_loading: 'Loading reminders...',
+    reminders_empty_title: 'No reminders yet',
+    reminders_empty_desc: 'Add your first medicine reminder to get started!',
+
+    // Admin (extra)
+    admin_add_medicine: '+ Add Medicine',
+    admin_add_doctor: '+ Add Doctor',
+    admin_add_disease: '+ Add Disease',
+    admin_add_guideline: '+ Add Guideline',
+    admin_add_center: '+ Add Center',
+    admin_tab_orders: 'Orders',
+
+    // Auth (extra)
+    login_signin_btn: 'Sign In',
+    register_create_btn: 'Create Account',
   },
   bn: {
     // Navigation
@@ -314,11 +374,14 @@ const translations = {
     doctor_add_favorite: 'প্রিয়তে যোগ করুন',
     doctor_remove_favorite: 'প্রিয় থেকে সরান',
     doctor_write_review: 'পর্যালোচনা লিখুন',
+    doctor_rate: 'রেট করুন',
+    doctor_submit_review: 'পর্যালোচনা জমা দিন',
     doctor_reviews: 'পর্যালোচনা',
 
     // Diseases Page
     diseases_title: 'রোগের জ্ঞান ভাণ্ডার',
     diseases_subtitle: 'রোগ, লক্ষণ এবং চিকিৎসা সম্পর্কে জানুন',
+    diseases_search_label: 'রোগ অনুসন্ধান করুন',
     diseases_search_placeholder: 'রোগ অনুসন্ধান করুন...',
     diseases_loading: 'রোগ লোড হচ্ছে...',
 
@@ -338,6 +401,8 @@ const translations = {
     guidelines_type_national: 'জাতীয় গাইডলাইন',
     guidelines_type_international: 'আন্তর্জাতিক গাইডলাইন',
     guidelines_loading: 'গাইডলাইন লোড হচ্ছে...',
+    guidelines_subtitle_national: 'বাংলাদেশের জাতীয় চিকিৎসা গাইডলাইন',
+    guidelines_subtitle_international: 'আন্তর্জাতিক চিকিৎসা গাইডলাইন এবং মানদণ্ড',
 
     guideline_authority: 'কর্তৃপক্ষ',
     guideline_publication_date: 'প্রকাশের তারিখ',
@@ -348,6 +413,8 @@ const translations = {
     investigations_subtitle: 'ডায়াগনস্টিক এবং পরীক্ষা কেন্দ্র খুঁজুন',
     investigations_search_placeholder: 'কেন্দ্র অনুসন্ধান করুন...',
     investigations_loading: 'পরীক্ষা কেন্দ্র লোড হচ্ছে...',
+    investigations_test_type_label: 'পরীক্ষার ধরন',
+    investigations_test_type_all: 'সকল পরীক্ষা',
 
     investigation_location: 'অবস্থান',
     investigation_address: 'ঠিকানা',
@@ -440,6 +507,59 @@ const translations = {
     common_delete_confirm: 'আপনি কি এই আইটেমটি মুছতে চান?',
     common_no_results: 'কোন ফলাফল পাওয়া যায়নি',
     common_currency: '৳',
+    common_view_details: 'বিস্তারিত দেখুন',
+    common_open_link: 'লিঙ্ক খুলুন',
+
+    // Disease Page (extra)
+    disease_important_notes: 'গুরুত্বপূর্ণ নোট',
+    disease_related_investigations: 'সম্পর্কিত পরীক্ষা কেন্দ্র',
+
+    // Guideline Page (extra)
+    guideline_description: 'বিবরণ',
+    guideline_source: 'উৎস',
+
+    // Investigation Page (extra)
+    investigation_location_address: 'অবস্থান ও ঠিকানা',
+
+    // Cart (extra)
+    cart_items_heading: 'কার্ট আইটেম',
+    cart_order_summary: 'অর্ডার সারসংক্ষেপ',
+
+    // Dashboard (extra)
+    dashboard_quick_actions: 'দ্রুত কার্যক্রম',
+    dashboard_stat_favorites: 'পছন্দের তালিকা',
+    dashboard_stat_chats: 'চ্যাট সেশন',
+    dashboard_stat_orders: 'অর্ডার',
+
+    // Reminders Page
+    reminders_page_title: 'ওষুধের অনুস্মারক',
+    reminders_subtitle: 'আপনার ওষুধ সেবনের সময়সূচী মেনে চলুন',
+    reminders_add_btn: 'অনুস্মারক যোগ করুন',
+    reminders_notif_title: 'ব্রাউজার বিজ্ঞপ্তি',
+    reminders_notif_desc: 'ওষুধ খাওয়ার সময় হলে সতর্কতা পেতে বিজ্ঞপ্তি সক্ষম করুন। নিচের বোতাম দিয়ে পরীক্ষাও করতে পারেন।',
+    reminders_enable_notif: 'বিজ্ঞপ্তি সক্ষম করুন',
+    reminders_test_notif: 'বিজ্ঞপ্তি পরীক্ষা করুন',
+    reminders_form_title: 'ওষুধের অনুস্মারক যোগ করুন',
+    reminders_medicine_name_label: 'ওষুধের নাম *',
+    reminders_dosage_label: 'ডোজ (ঐচ্ছিক)',
+    reminders_time_label: 'অনুস্মারক সময় *',
+    reminders_frequency_label: 'ফ্রিকোয়েন্সি',
+    reminders_save_btn: 'অনুস্মারক সংরক্ষণ করুন',
+    reminders_loading: 'অনুস্মারক লোড হচ্ছে...',
+    reminders_empty_title: 'এখনও কোন অনুস্মারক নেই',
+    reminders_empty_desc: 'শুরু করতে আপনার প্রথম ওষুধের অনুস্মারক যোগ করুন!',
+
+    // Admin (extra)
+    admin_add_medicine: '+ ওষুধ যোগ করুন',
+    admin_add_doctor: '+ ডাক্তার যোগ করুন',
+    admin_add_disease: '+ রোগ যোগ করুন',
+    admin_add_guideline: '+ গাইডলাইন যোগ করুন',
+    admin_add_center: '+ কেন্দ্র যোগ করুন',
+    admin_tab_orders: 'অর্ডার',
+
+    // Auth (extra)
+    login_signin_btn: 'সাইন ইন করুন',
+    register_create_btn: 'অ্যাকাউন্ট তৈরি করুন',
   }
 };
 

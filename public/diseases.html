@@ -6,6 +6,7 @@
   <title>Diseases - Medica</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -45,30 +46,30 @@
   <div class="container">
     <div class="disclaimer-banner">⚠️ This information is for educational purposes only. Please consult a licensed doctor for medical advice.</div>
 
-    <h1 class="page-title">Disease Information</h1>
-    <p class="page-subtitle">Browse and search disease articles and health information</p>
+    <h1 class="page-title" data-i18n="diseases_title">Disease Information</h1>
+    <p class="page-subtitle" data-i18n="diseases_subtitle">Browse and search disease articles and health information</p>
 
     <div class="search-section">
       <div class="search-row">
         <div class="search-group" style="flex:2">
-          <label>Search Diseases</label>
-          <input type="text" id="search-input" placeholder="Search by disease name, symptoms, or category...">
+          <label data-i18n="diseases_search_label">Search Diseases</label>
+          <input type="text" id="search-input" data-i18n="diseases_search_placeholder" placeholder="Search by disease name, symptoms, or category...">
         </div>
         <div class="search-group">
-          <label>Category</label>
+          <label data-i18n="medicines_category_label">Category</label>
           <select id="category-filter">
-            <option value="all">All Categories</option>
+            <option value="all" data-i18n="medicines_category_all">All Categories</option>
           </select>
         </div>
         <div class="search-group" style="flex:0">
           <label>&nbsp;</label>
-          <button class="btn btn-primary" onclick="searchDiseases()">Search</button>
+          <button class="btn btn-primary" onclick="searchDiseases()" data-i18n="medicines_search_btn">Search</button>
         </div>
       </div>
     </div>
 
     <div id="diseases-grid" class="grid grid-3">
-      <p class="loading">Loading diseases...</p>
+      <p class="loading" data-i18n="diseases_loading">Loading diseases...</p>
     </div>
 
     <div class="pagination" id="pagination"></div>
@@ -79,7 +80,7 @@
     <div class="modal" style="max-width:700px">
       <div id="disease-detail"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeDiseaseModal()">Close</button>
+        <button class="btn btn-secondary" onclick="closeDiseaseModal()" data-i18n="common_close">Close</button>
       </div>
     </div>
   </div>
@@ -161,7 +162,7 @@
         if (d.overview) {
           html += `
             <div class="detail-section">
-              <h3>📋 Overview</h3>
+              <h3>📋 ${i18n.t('disease_overview')}</h3>
               <p>${simpleMarkdown(d.overview)}</p>
             </div>
           `;
@@ -170,7 +171,7 @@
         if (d.causes) {
           html += `
             <div class="detail-section">
-              <h3>🔬 Causes</h3>
+              <h3>🔬 ${i18n.t('disease_causes')}</h3>
               <p>${simpleMarkdown(d.causes)}</p>
             </div>
           `;
@@ -179,7 +180,7 @@
         if (d.symptoms) {
           html += `
             <div class="detail-section">
-              <h3>🩺 Symptoms</h3>
+              <h3>🩺 ${i18n.t('disease_symptoms')}</h3>
               <p>${simpleMarkdown(d.symptoms)}</p>
             </div>
           `;
@@ -188,7 +189,7 @@
         if (d.risk_factors) {
           html += `
             <div class="detail-section">
-              <h3>⚡ Risk Factors</h3>
+              <h3>⚡ ${i18n.t('disease_risk_factors')}</h3>
               <p>${simpleMarkdown(d.risk_factors)}</p>
             </div>
           `;
@@ -197,7 +198,7 @@
         if (d.diagnosis) {
           html += `
             <div class="detail-section">
-              <h3>🔍 Diagnosis</h3>
+              <h3>🔍 ${i18n.t('disease_diagnosis')}</h3>
               <p>${simpleMarkdown(d.diagnosis)}</p>
             </div>
           `;
@@ -206,7 +207,7 @@
         if (d.treatment) {
           html += `
             <div class="detail-section">
-              <h3>💊 Treatment</h3>
+              <h3>💊 ${i18n.t('disease_treatment')}</h3>
               <p>${simpleMarkdown(d.treatment)}</p>
             </div>
           `;
@@ -215,7 +216,7 @@
         if (d.prevention) {
           html += `
             <div class="detail-section">
-              <h3>🛡️ Prevention</h3>
+              <h3>🛡️ ${i18n.t('disease_prevention')}</h3>
               <p>${simpleMarkdown(d.prevention)}</p>
             </div>
           `;
@@ -224,7 +225,7 @@
         if (d.important_notes) {
           html += `
             <div class="detail-section">
-              <h3 style="color:var(--danger)">🚨 Important Notes</h3>
+              <h3 style="color:var(--danger)">🚨 ${i18n.t('disease_important_notes')}</h3>
               <div class="warning-box">${simpleMarkdown(d.important_notes)}</div>
             </div>
           `;
@@ -233,7 +234,7 @@
         if (relatedDoctors.length > 0) {
           html += `
             <div class="detail-section">
-              <h3>👨‍⚕️ Related Doctors</h3>
+              <h3>👨‍⚕️ ${i18n.t('disease_related_doctors')}</h3>
               <div class="related-list">
                 ${relatedDoctors.map(doc => `
                   <div class="related-item">
@@ -250,7 +251,7 @@
         if (relatedInvestigations.length > 0) {
           html += `
             <div class="detail-section">
-              <h3>🏥 Related Investigation Centers</h3>
+              <h3>🏥 ${i18n.t('disease_related_investigations')}</h3>
               <div class="related-list">
                 ${relatedInvestigations.map(inv => `
                   <div class="related-item">
@@ -284,5 +285,6 @@
       loadDiseases();
     });
   </script>
+  <script src="js/language-switcher.js"></script>
 </body>
 </html>
