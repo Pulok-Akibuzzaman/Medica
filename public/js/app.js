@@ -107,15 +107,10 @@ function initNavTranslations() {
   });
 
   // Set auth button translations
-  const loginBtn = Array.from(document.querySelectorAll('.btn')).find(b =>
-    b.textContent.includes('Login')
-  );
-  if (loginBtn) loginBtn.setAttribute('data-i18n', 'nav_login');
-
-  const registerBtn = Array.from(document.querySelectorAll('.btn')).find(b =>
-    b.textContent.includes('Register')
-  );
-  if (registerBtn) registerBtn.setAttribute('data-i18n', 'nav_register');
+  const loginLink = document.querySelector('.nav-actions a[href="login.html"]');
+  const registerLink = document.querySelector('.nav-actions a[href="register.html"]');
+  if (loginLink) loginLink.setAttribute('data-i18n', 'nav_login');
+  if (registerLink) registerLink.setAttribute('data-i18n', 'nav_register');
 
   if (typeof i18n !== 'undefined') {
     i18n.updatePageLanguage();
