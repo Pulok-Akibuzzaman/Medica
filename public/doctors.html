@@ -141,6 +141,14 @@
       } catch (e) { console.error(e); }
     }
 
+    function debounce(fn, wait = 250) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), wait);
+      };
+    }
+
     async function loadDoctors(page = 1) {
       currentPage = page;
       const search = document.getElementById('search-input').value;
@@ -204,6 +212,11 @@
 
     function searchDoctors() { loadDoctors(1); }
 
+    const debouncedLoadDoctors = debounce(() => loadDoctors(1), 250);
+
+    document.getElementById('search-input').addEventListener('input', debouncedLoadDoctors);
+    document.getElementById('location-filter').addEventListener('change', () => loadDoctors(1));
+    document.getElementById('specialty-filter').addEventListener('change', () => loadDoctors(1));
     document.getElementById('search-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') searchDoctors();
     });
