@@ -89,6 +89,7 @@ router.post('/', authenticateToken, (req, res) => {
 router.put('/:id/cancel', authenticateToken, (req, res) => {
   try {
     const appointmentId = parseInt(req.params.id);
+    const { cancellation_reason } = req.body;
 
     const appointment = getOne(
       'SELECT * FROM appointments WHERE id = ? AND user_id = ?',
@@ -103,7 +104,10 @@ router.put('/:id/cancel', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Appointment is already cancelled.' });
     }
 
-    runQuery('UPDATE appointments SET status = ? WHERE id = ?', ['cancelled', appointmentId]);
+    runQuery(
+      'UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?',
+      ['cancelled', cancellation_reason || '', appointmentId]
+    );
 
     res.json({ message: 'Appointment cancelled successfully.' });
   } catch (err) {

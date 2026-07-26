@@ -501,9 +501,9 @@
             ${apt.reason ? `<p style="padding: 0.75rem; background: var(--primary-light); border-radius: var(--radius-sm); margin-top: 1rem;"><strong>Reason:</strong> ${apt.reason}</p>` : ''}
           </div>
           <div class="appointment-actions">
-            ${apt.status === 'pending' || apt.status === 'confirmed' ? `
+            ${apt.status === 'scheduled' || apt.status === 'confirmed' ? `
               <button class="btn btn-sm btn-secondary" onclick="showRescheduleModal(${apt.id}, '${apt.appointment_date}', '${apt.appointment_time}')">📅 Reschedule</button>
-              <button class="btn btn-sm btn-danger" onclick="cancelAppointment(${apt.id})">❌ Cancel</button>
+              <button class="btn btn-sm btn-danger" onclick="showCancelModal(${apt.id})">❌ Cancel</button>
             ` : apt.status === 'cancelled' ? `
               <button class="btn btn-sm btn-secondary" onclick="bookNewAppointment()">➕ New Appointment</button>
             ` : ''}
@@ -512,16 +512,42 @@
       `).join('');
     }
 
-    async function cancelAppointment(id) {
-      if (!confirm('Are you sure you want to cancel this appointment?')) return;
+    let cancelAppointmentId = null;
+
+    function showCancelModal(id) {
+      cancelAppointmentId = id;
+      document.getElementById('cancel-modal').classList.remove('hidden');
+      document.getElementById('cancel-reason').value = '';
+    }
+
+    function closeCancelModal() {
+      document.getElementById('cancel-modal').classList.add('hidden');
+      cancelAppointmentId = null;
+    }
+
+    async function submitCancel() {
+      const reason = document.getElementById('cancel-reason').value.trim();
+
+      if (!reason) {
+        alert('Please provide a reason for cancellation');
+        return;
+      }
 
       try {
-        await apiFetch(`/api/appointments/${id}/cancel`, { method: 'PUT' });
-        showAlert(document.getElementById('alert-container'), '✅ Appointment cancelled', 'success');
+        await apiFetch(`/api/appointments/${cancelAppointmentId}/cancel`, {
+          method: 'PUT',
+          body: JSON.stringify({ cancellation_reason: reason })
+        });
+        showAlert(document.getElementById('alert-container'), '✅ Appointment cancelled successfully', 'success');
+        closeCancelModal();
         loadAppointments();
       } catch (err) {
         showAlert(document.getElementById('alert-container'), 'Cancellation failed: ' + err.message, 'error');
       }
+    }
+
+    async function cancelAppointment(id) {
+      showCancelModal(id);
     }
 
     let rescheduleAppointmentId = null;
@@ -683,6 +709,28 @@
       document.getElementById('reschedule-time').value = time;
     }
   </script>
+
+  <!-- Cancel Appointment Modal -->
+  <div class="modal-overlay hidden" id="cancel-modal">
+    <div class="modal" style="max-width: 500px;">
+      <h2>Cancel Appointment</h2>
+      <p style="color: var(--text-light); margin-bottom: 1.5rem;">Please tell us why you want to cancel this appointment. This helps us improve our service.</p>
+
+      <div style="background: #fee2e2; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; border-left: 4px solid #dc2626;">
+        <p style="margin: 0; font-size: 0.9rem; color: #991b1b;"><strong>⚠️ Warning:</strong> This action cannot be undone. The appointment slot will be released for other patients.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="cancel-reason">Reason for Cancellation *</label>
+        <textarea id="cancel-reason" placeholder="e.g., Unable to make it that day, Found another doctor, Personal reasons, Emergency came up, etc." rows="4" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button class="btn btn-danger" style="flex: 1;" onclick="submitCancel()">Cancel Appointment</button>
+        <button class="btn btn-secondary" style="flex: 1;" onclick="closeCancelModal()">Keep Appointment</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/language-switcher.js"></script>
 </body>

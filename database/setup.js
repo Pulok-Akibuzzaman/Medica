@@ -186,7 +186,14 @@ async function initDatabase() {
       shipping_name TEXT NOT NULL,
       shipping_phone TEXT NOT NULL,
       shipping_address TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      tracking_number TEXT,
+      delivery_date TEXT,
+      estimated_delivery TEXT,
+      current_location TEXT,
+      delivery_status TEXT DEFAULT 'pending',
+      cancellation_reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME
     )
   `);
 
@@ -225,6 +232,7 @@ async function initDatabase() {
       appointment_time TEXT NOT NULL,
       reason TEXT,
       status TEXT DEFAULT 'scheduled',
+      cancellation_reason TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -232,6 +240,8 @@ async function initDatabase() {
   migrateUserMedicalInfo(db);
   migrateDoctorFees(db);
   migrateMedicinePrices(db);
+  migrateCancellationReason(db);
+  migrateDeliveryTracking(db);
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
@@ -310,6 +320,44 @@ function migrateMedicinePrices(db) {
     });
     saveDb();
     console.log(`Assigned prices to ${unpriced[0].values.length} medicines`);
+  }
+}
+
+// Add cancellation reason column to appointments table for existing databases
+function migrateCancellationReason(db) {
+  const columns = db.exec('PRAGMA table_info(appointments)');
+  const names = columns.length > 0 ? columns[0].values.map(c => c[1]) : [];
+
+  if (!names.includes('cancellation_reason')) {
+    db.run('ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT');
+  }
+}
+
+// Add delivery tracking columns to orders table for existing databases
+function migrateDeliveryTracking(db) {
+  const columns = db.exec('PRAGMA table_info(orders)');
+  const names = columns.length > 0 ? columns[0].values.map(c => c[1]) : [];
+
+  if (!names.includes('tracking_number')) {
+    db.run('ALTER TABLE orders ADD COLUMN tracking_number TEXT');
+  }
+  if (!names.includes('delivery_date')) {
+    db.run('ALTER TABLE orders ADD COLUMN delivery_date TEXT');
+  }
+  if (!names.includes('estimated_delivery')) {
+    db.run('ALTER TABLE orders ADD COLUMN estimated_delivery TEXT');
+  }
+  if (!names.includes('current_location')) {
+    db.run('ALTER TABLE orders ADD COLUMN current_location TEXT');
+  }
+  if (!names.includes('delivery_status')) {
+    db.run('ALTER TABLE orders ADD COLUMN delivery_status TEXT DEFAULT "pending"');
+  }
+  if (!names.includes('cancellation_reason')) {
+    db.run('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT');
+  }
+  if (!names.includes('updated_at')) {
+    db.run('ALTER TABLE orders ADD COLUMN updated_at DATETIME');
   }
 }
 

@@ -99,6 +99,7 @@
 
     <div class="card" style="margin-top:1.5rem">
       <h3 style="margin-bottom:1rem">🧾 Order History</h3>
+      <div id="order-alert-container"></div>
       <div id="orders-list">
         <p class="loading">Loading...</p>
       </div>
@@ -271,6 +272,41 @@
       delivered: '#38a169', cancelled: '#e53e3e'
     };
 
+    let cancelOrderId = null;
+
+    function showCancelOrderModal(orderId, total) {
+      cancelOrderId = orderId;
+      document.getElementById('cancel-order-total').textContent = formatPrice(total);
+      document.getElementById('cancel-order-reason').value = '';
+      document.getElementById('cancel-order-modal').classList.remove('hidden');
+    }
+
+    function closeCancelOrderModal() {
+      document.getElementById('cancel-order-modal').classList.add('hidden');
+      cancelOrderId = null;
+    }
+
+    async function submitCancelOrder() {
+      const reason = document.getElementById('cancel-order-reason').value.trim();
+
+      if (!reason) {
+        alert('Please provide a reason for cancelling the order');
+        return;
+      }
+
+      try {
+        await apiFetch(`/api/orders/${cancelOrderId}/cancel`, {
+          method: 'PUT',
+          body: JSON.stringify({ cancellation_reason: reason })
+        });
+        showAlert(document.getElementById('order-alert-container'), '✅ Order cancelled successfully! Refund will be processed within 3-5 business days.', 'success');
+        closeCancelOrderModal();
+        loadOrders();
+      } catch (err) {
+        showAlert(document.getElementById('order-alert-container'), 'Failed to cancel order: ' + err.message, 'error');
+      }
+    }
+
     async function loadOrders() {
       const list = document.getElementById('orders-list');
       try {
@@ -282,21 +318,68 @@
           return;
         }
 
-        list.innerHTML = data.orders.map(o => `
-          <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
-              <div>
-                <strong>Order #${o.id}</strong>
-                <small style="color:var(--text-light);margin-left:0.5rem">${formatDate(o.created_at)}</small>
+        list.innerHTML = data.orders.map(o => {
+          const deliveryStatusColors = {
+            'pending': '#d69e2e', 'processing': '#3182ce', 'shipped': '#805ad5',
+            'out_for_delivery': '#9f7aea', 'delivered': '#38a169', 'cancelled': '#e53e3e'
+          };
+          const deliveryStatusLabel = {
+            'pending': 'Pending', 'processing': 'Processing', 'shipped': 'Shipped',
+            'out_for_delivery': 'Out for Delivery', 'delivered': 'Delivered', 'cancelled': 'Cancelled'
+          };
+
+          return `
+            <div style="padding:1rem;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:1rem">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
+                <div>
+                  <strong style="font-size:1.05rem">Order #${o.id}</strong>
+                  <small style="color:var(--text-light);margin-left:0.5rem">${formatDate(o.created_at)}</small>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                  <span style="background:${STATUS_COLORS[o.status] || '#718096'};color:#fff;border-radius:12px;padding:4px 10px;font-size:0.75rem;text-transform:capitalize">${o.status}</span>
+                  <strong style="color:var(--primary)">${formatPrice(o.total)}</strong>
+                </div>
               </div>
-              <div style="display:flex;align-items:center;gap:0.75rem">
-                <span style="background:${STATUS_COLORS[o.status] || '#718096'};color:#fff;border-radius:12px;padding:2px 10px;font-size:0.75rem;text-transform:capitalize">${o.status}</span>
-                <strong>${formatPrice(o.total)}</strong>
+
+              <p style="margin:0 0 0.5rem 0;font-size:0.9rem;color:var(--text-light)">
+                ${o.items.map(i => `${i.medicine_name} ×${i.quantity}`).join(', ')}
+              </p>
+
+              <div style="background:var(--bg);padding:1rem;border-radius:var(--radius-sm);border-left:4px solid ${deliveryStatusColors[o.delivery_status] || '#718096'}">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem">
+                  <div>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-light)">📦 Tracking</p>
+                    <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:0.9rem;word-break:break-all">${o.tracking_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-light)">🚚 Status</p>
+                    <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:0.9rem;color:${deliveryStatusColors[o.delivery_status] || '#718096'}">${deliveryStatusLabel[o.delivery_status] || 'Unknown'}</p>
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+                  <div>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-light)">📍 Location</p>
+                    <p style="margin:0.25rem 0 0 0;font-weight:500;font-size:0.9rem">${o.current_location || '—'}</p>
+                  </div>
+                  <div>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-light)">${o.delivery_date ? '✅ Delivered' : '📅 Est. Delivery'}</p>
+                    <p style="margin:0.25rem 0 0 0;font-weight:500;font-size:0.9rem">${o.delivery_date ? formatDate(o.delivery_date) : (o.estimated_delivery ? formatDate(o.estimated_delivery) : '—')}</p>
+                  </div>
+                </div>
+
+                <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+                  ${o.status !== 'cancelled' && o.delivery_status !== 'delivered' && o.delivery_status !== 'cancelled' ? `
+                    <button class="btn btn-sm btn-danger" onclick="showCancelOrderModal(${o.id}, ${o.total})">❌ Cancel Order</button>
+                  ` : ''}
+                  ${o.cancellation_reason ? `
+                    <p style="margin:0;padding:0.5rem;background:#fee2e2;color:#991b1b;border-radius:var(--radius-sm);font-size:0.85rem">Cancelled: ${o.cancellation_reason}</p>
+                  ` : ''}
+                </div>
               </div>
             </div>
-            <small style="color:var(--text-light)">${o.items.map(i => `${i.medicine_name} ×${i.quantity}`).join(', ')}</small>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (e) {
         document.getElementById('stat-orders').textContent = '0';
         list.innerHTML = '<p style="color:var(--text-light)">Failed to load orders.</p>';
@@ -384,6 +467,78 @@
       }
     });
   </script>
+
+  <!-- Cancel Order Modal -->
+  <div class="modal-overlay hidden" id="cancel-order-modal">
+    <div class="modal" style="max-width:500px">
+      <h2>Cancel Order</h2>
+      <p style="color:var(--text-light);margin-bottom:1rem">Please tell us why you want to cancel this order.</p>
+
+      <div style="background:#fee2e2;padding:1rem;border-radius:var(--radius-sm);margin-bottom:1.5rem;border-left:4px solid #dc2626">
+        <p style="margin:0;font-size:0.9rem;color:#991b1b"><strong>⚠️ Warning:</strong> Once cancelled, this order cannot be restored. A refund will be processed to your original payment method within 3-5 business days.</p>
+      </div>
+
+      <div style="background:var(--primary-light);padding:1rem;border-radius:var(--radius-sm);margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <p style="margin:0;color:var(--text-light);font-size:0.85rem">Order Total</p>
+          <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:1.1rem;color:var(--primary)" id="cancel-order-total">৳0</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="cancel-order-reason">Reason for Cancellation *</label>
+        <textarea id="cancel-order-reason" placeholder="e.g., No longer needed, Found better price, Changed my mind, Medical condition changed, etc." rows="4" required style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit"></textarea>
+      </div>
+
+      <div style="display:flex;gap:1rem;margin-top:1.5rem">
+        <button class="btn btn-danger" style="flex:1" onclick="submitCancelOrder()">Cancel Order</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="closeCancelOrderModal()">Keep Order</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay:not(.hidden) {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+
   <script src="js/language-switcher.js"></script>
 </body>
 </html>

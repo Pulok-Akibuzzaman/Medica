@@ -31,9 +31,15 @@ router.post('/', authenticateToken, (req, res) => {
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const total = Math.round((subtotal + DELIVERY_FEE) * 100) / 100;
 
+    // Generate tracking number
+    const trackingNumber = 'TRK' + Date.now() + Math.random().toString(36).substr(2, 9).toUpperCase();
+    // Calculate estimated delivery (3-5 business days)
+    const estDelivery = new Date();
+    estDelivery.setDate(estDelivery.getDate() + 4);
+
     runQuery(
-      'INSERT INTO orders (user_id, total, status, shipping_name, shipping_phone, shipping_address) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.user.id, total, 'pending', shipping_name, shipping_phone, shipping_address]
+      'INSERT INTO orders (user_id, total, status, shipping_name, shipping_phone, shipping_address, tracking_number, delivery_status, estimated_delivery, current_location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, total, 'pending', shipping_name, shipping_phone, shipping_address, trackingNumber, 'pending', estDelivery.toISOString().split('T')[0], 'Warehouse']
     );
     const orderId = getLastInsertId();
 
@@ -65,6 +71,39 @@ router.get('/', authenticateToken, (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch orders.' });
+  }
+});
+
+// User cancels order (MUST be before router.get('/:id'))
+router.put('/:id/cancel', authenticateToken, (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const { cancellation_reason } = req.body;
+
+    const order = getOne('SELECT * FROM orders WHERE id = ? AND user_id = ?', [orderId, req.user.id]);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ error: 'Order is already cancelled.' });
+    }
+
+    if (order.delivery_status === 'delivered' || order.delivery_status === 'cancelled') {
+      return res.status(400).json({ error: 'Cannot cancel a delivered or already cancelled order.' });
+    }
+
+    const now = new Date().toISOString();
+    runQuery(
+      'UPDATE orders SET status = ?, delivery_status = ?, cancellation_reason = ?, updated_at = ? WHERE id = ?',
+      ['cancelled', 'cancelled', cancellation_reason || '', now, orderId]
+    );
+    saveDb();
+
+    res.json({ message: 'Order cancelled successfully. Refund will be processed within 3-5 business days.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to cancel order.' });
   }
 });
 
@@ -114,13 +153,48 @@ router.put('/:id/status', authenticateToken, requireAdmin, (req, res) => {
     if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `Status must be one of: ${VALID_STATUSES.join(', ')}` });
     }
-    runQuery('UPDATE orders SET status = ? WHERE id = ?', [status, parseInt(req.params.id)]);
+    const now = new Date().toISOString();
+    runQuery('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?', [status, now, parseInt(req.params.id)]);
     if (getChanges() === 0) return res.status(404).json({ error: 'Order not found.' });
     saveDb();
     res.json({ message: 'Order status updated.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update order status.' });
+  }
+});
+
+// Admin updates delivery tracking
+router.put('/:id/tracking', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { delivery_status, current_location } = req.body;
+    const validDeliveryStatuses = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+
+    if (!delivery_status || !validDeliveryStatuses.includes(delivery_status)) {
+      return res.status(400).json({ error: `Delivery status must be one of: ${validDeliveryStatuses.join(', ')}` });
+    }
+
+    const now = new Date().toISOString();
+    let deliveryDate = null;
+    if (delivery_status === 'delivered') {
+      deliveryDate = new Date().toISOString().split('T')[0];
+    }
+
+    const query = deliveryDate
+      ? 'UPDATE orders SET delivery_status = ?, current_location = ?, delivery_date = ?, updated_at = ? WHERE id = ?'
+      : 'UPDATE orders SET delivery_status = ?, current_location = ?, updated_at = ? WHERE id = ?';
+
+    const params = deliveryDate
+      ? [delivery_status, current_location || '', deliveryDate, now, parseInt(req.params.id)]
+      : [delivery_status, current_location || '', now, parseInt(req.params.id)];
+
+    runQuery(query, params);
+    if (getChanges() === 0) return res.status(404).json({ error: 'Order not found.' });
+    saveDb();
+    res.json({ message: 'Delivery tracking updated.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update delivery tracking.' });
   }
 });
 
