@@ -84,9 +84,23 @@ router.post('/login', (req, res) => {
 });
 
 router.get('/me', authenticateToken, (req, res) => {
-  const user = getOne('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [req.user.id]);
+  const user = getOne('SELECT id, name, email, role, blood_group, allergies, disabilities, organ_donor, chronic_diseases, created_at FROM users WHERE id = ?', [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found.' });
   res.json({ user });
+});
+
+router.post('/medical-info', authenticateToken, (req, res) => {
+  try {
+    const { bloodGroup, allergies, disabilities, organDonor, chronicDiseases } = req.body;
+    runQuery('UPDATE users SET blood_group = ?, allergies = ?, disabilities = ?, organ_donor = ?, chronic_diseases = ? WHERE id = ?',
+      [bloodGroup || null, allergies || null, disabilities || null, organDonor ? 1 : 0, chronicDiseases || null, req.user.id]);
+
+    const user = getOne('SELECT id, name, email, role, blood_group, allergies, disabilities, organ_donor, chronic_diseases FROM users WHERE id = ?', [req.user.id]);
+    res.json({ message: 'Medical information updated successfully!', user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update medical information.' });
+  }
 });
 
 module.exports = router;

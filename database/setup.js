@@ -46,6 +46,11 @@ async function initDatabase() {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
+      blood_group TEXT,
+      allergies TEXT,
+      disabilities TEXT,
+      organ_donor INTEGER DEFAULT 0,
+      chronic_diseases TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -208,6 +213,7 @@ async function initDatabase() {
     )
   `);
 
+  migrateUserMedicalInfo(db);
   migrateMedicinePrices(db);
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
@@ -221,6 +227,28 @@ async function initDatabase() {
   }
 
   console.log('Database initialized successfully');
+}
+
+// Add medical info columns to users table for existing databases
+function migrateUserMedicalInfo(db) {
+  const columns = db.exec('PRAGMA table_info(users)');
+  const names = columns.length > 0 ? columns[0].values.map(c => c[1]) : [];
+
+  if (!names.includes('blood_group')) {
+    db.run('ALTER TABLE users ADD COLUMN blood_group TEXT');
+  }
+  if (!names.includes('allergies')) {
+    db.run('ALTER TABLE users ADD COLUMN allergies TEXT');
+  }
+  if (!names.includes('disabilities')) {
+    db.run('ALTER TABLE users ADD COLUMN disabilities TEXT');
+  }
+  if (!names.includes('organ_donor')) {
+    db.run('ALTER TABLE users ADD COLUMN organ_donor INTEGER DEFAULT 0');
+  }
+  if (!names.includes('chronic_diseases')) {
+    db.run('ALTER TABLE users ADD COLUMN chronic_diseases TEXT');
+  }
 }
 
 // Older databases were created before the e-pharmacy module existed, so the

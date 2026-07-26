@@ -100,6 +100,113 @@
         <p class="loading">Loading...</p>
       </div>
     </div>
+
+    <!-- Medical Profile Section -->
+    <div class="card" style="margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <h3 style="margin:0">🏥 Medical Profile</h3>
+        <button class="btn btn-sm btn-primary" onclick="toggleMedicalEdit()" id="edit-medical-btn">Edit</button>
+      </div>
+
+      <!-- View Mode -->
+      <div id="medical-view" style="display:none">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem">
+          <div>
+            <label style="font-weight:600;color:var(--text-light);font-size:0.85rem;display:block;margin-bottom:0.5rem">Blood Group</label>
+            <div style="font-size:1.1rem;font-weight:500" id="view-blood-group">—</div>
+          </div>
+          <div>
+            <label style="font-weight:600;color:var(--text-light);font-size:0.85rem;display:block;margin-bottom:0.5rem">Organ Donor Status</label>
+            <div style="font-size:1.1rem;font-weight:500" id="view-organ-donor">—</div>
+          </div>
+          <div>
+            <label style="font-weight:600;color:var(--text-light);font-size:0.85rem;display:block;margin-bottom:0.5rem">Allergies</label>
+            <div style="font-size:0.95rem" id="view-allergies">—</div>
+          </div>
+          <div>
+            <label style="font-weight:600;color:var(--text-light);font-size:0.85rem;display:block;margin-bottom:0.5rem">Disabilities</label>
+            <div style="font-size:0.95rem" id="view-disabilities">—</div>
+          </div>
+          <div>
+            <label style="font-weight:600;color:var(--text-light);font-size:0.85rem;display:block;margin-bottom:0.5rem">Chronic Diseases</label>
+            <div style="font-size:0.95rem" id="view-chronic-diseases">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div id="medical-edit" style="display:none">
+        <div id="medical-alert-container"></div>
+        <form id="medical-edit-form" style="display:none">
+          <div class="form-group">
+            <label for="edit-blood-group">Blood Group</label>
+            <select id="edit-blood-group">
+              <option value="">Select Blood Group</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-allergies">Allergies (if any)</label>
+            <textarea id="edit-allergies" placeholder="e.g., Penicillin, Peanuts, Shellfish"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-disabilities">Disabilities (if any)</label>
+            <textarea id="edit-disabilities" placeholder="e.g., Mobility issues, Visual impairment"></textarea>
+          </div>
+
+          <div class="form-group checkbox">
+            <label for="edit-organ-donor" class="checkbox-label">
+              <input type="checkbox" id="edit-organ-donor">
+              <span>I am an Organ Donor</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>Chronic Diseases (if any)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" value="Diabetes" class="edit-chronic-disease-checkbox">
+                <span>Diabetes</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" value="Asthma" class="edit-chronic-disease-checkbox">
+                <span>Asthma</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" value="Heart Disease" class="edit-chronic-disease-checkbox">
+                <span>Heart Disease</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" value="Hypertension" class="edit-chronic-disease-checkbox">
+                <span>Hypertension</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" value="Thyroid" class="edit-chronic-disease-checkbox">
+                <span>Thyroid</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" value="Kidney Disease" class="edit-chronic-disease-checkbox">
+                <span>Kidney Disease</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;margin-top:1.5rem">
+            <button type="submit" class="btn btn-primary" style="flex:1">Save Changes</button>
+            <button type="button" class="btn btn-secondary" style="flex:1" onclick="toggleMedicalEdit()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script src="js/app.js"></script>
@@ -192,6 +299,87 @@
         list.innerHTML = '<p style="color:var(--text-light)">Failed to load orders.</p>';
       }
     }
+
+    async function loadMedicalProfile() {
+      try {
+        const data = await apiFetch('/api/auth/me');
+        const user = data.user;
+
+        document.getElementById('view-blood-group').textContent = user.blood_group || '—';
+        document.getElementById('view-allergies').textContent = user.allergies || '—';
+        document.getElementById('view-disabilities').textContent = user.disabilities || '—';
+        document.getElementById('view-organ-donor').textContent = user.organ_donor ? '✅ Yes' : '—';
+        document.getElementById('view-chronic-diseases').textContent = user.chronic_diseases || '—';
+
+        document.getElementById('edit-blood-group').value = user.blood_group || '';
+        document.getElementById('edit-allergies').value = user.allergies || '';
+        document.getElementById('edit-disabilities').value = user.disabilities || '';
+        document.getElementById('edit-organ-donor').checked = user.organ_donor ? true : false;
+
+        if (user.chronic_diseases) {
+          const diseases = user.chronic_diseases.split(', ');
+          document.querySelectorAll('.edit-chronic-disease-checkbox').forEach(cb => {
+            cb.checked = diseases.includes(cb.value);
+          });
+        }
+
+        document.getElementById('medical-view').style.display = 'block';
+      } catch (e) {
+        console.error('Failed to load medical profile:', e);
+      }
+    }
+
+    function toggleMedicalEdit() {
+      const viewDiv = document.getElementById('medical-view');
+      const editDiv = document.getElementById('medical-edit');
+      const editBtn = document.getElementById('edit-medical-btn');
+      const editForm = document.getElementById('medical-edit-form');
+
+      if (viewDiv.style.display === 'none') {
+        viewDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+        editBtn.textContent = 'Edit';
+      } else {
+        viewDiv.style.display = 'none';
+        editDiv.style.display = 'block';
+        editBtn.textContent = 'Cancel';
+        editForm.style.display = 'block';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadMedicalProfile();
+
+      const editForm = document.getElementById('medical-edit-form');
+      if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const container = document.getElementById('medical-alert-container');
+
+          const bloodGroup = document.getElementById('edit-blood-group').value || null;
+          const allergies = document.getElementById('edit-allergies').value.trim() || null;
+          const disabilities = document.getElementById('edit-disabilities').value.trim() || null;
+          const organDonor = document.getElementById('edit-organ-donor').checked;
+          const chronicDiseases = Array.from(document.querySelectorAll('.edit-chronic-disease-checkbox:checked'))
+            .map(cb => cb.value).join(', ') || null;
+
+          try {
+            await apiFetch('/api/auth/medical-info', {
+              method: 'POST',
+              body: JSON.stringify({ bloodGroup, allergies, disabilities, organDonor, chronicDiseases })
+            });
+
+            showAlert(container, 'Medical information updated successfully!', 'success');
+            setTimeout(() => {
+              loadMedicalProfile();
+              toggleMedicalEdit();
+            }, 1000);
+          } catch (err) {
+            showAlert(container, err.message || 'Failed to update medical information');
+          }
+        });
+      }
+    });
   </script>
   <script src="js/language-switcher.js"></script>
 </body>

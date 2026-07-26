@@ -170,6 +170,21 @@ const translations = {
     register_have_account: 'Already have an account?',
     register_login_here: 'Login here',
     register_error: 'Registration failed. Please try again.',
+    register_medical_info: 'Medical Information',
+    register_blood_group: 'Blood Group',
+    register_allergies: 'Allergies (if any)',
+    register_allergies_placeholder: 'e.g., Penicillin, Peanuts, Shellfish',
+    register_disabilities: 'Disabilities (if any)',
+    register_disabilities_placeholder: 'e.g., Mobility issues, Visual impairment',
+    register_organ_donor: 'Organ Donor Status',
+    register_organ_donor_text: 'I am an Organ Donor',
+    register_chronic_diseases: 'Chronic Diseases (if any)',
+
+    // Medical Profile
+    medical_profile_title: 'Medical Profile',
+    medical_profile_subtitle: 'Add your medical information (Optional)',
+    medical_profile_save: 'Save Medical Info',
+    medical_profile_skip: 'Skip for Now',
 
     // Cart & Checkout
     cart_title: 'Shopping Cart',
@@ -461,6 +476,21 @@ const translations = {
     register_have_account: 'ইতিমধ্যে অ্যাকাউন্ট আছে?',
     register_login_here: 'এখানে লগইন করুন',
     register_error: 'রেজিস্ট্রেশন ব্যর্থ। আবার চেষ্টা করুন।',
+    register_medical_info: 'চিকিৎসা তথ্য',
+    register_blood_group: 'রক্তের গ্রুপ',
+    register_allergies: 'অ্যালার্জি (যদি থাকে)',
+    register_allergies_placeholder: 'যেমন: পেনিসিলিন, চিনাবাদাম, শেলফিশ',
+    register_disabilities: 'অক্ষমতা (যদি থাকে)',
+    register_disabilities_placeholder: 'যেমন: গতিশীলতায় সমস্যা, দৃষ্টিশক্তি হ্রাস',
+    register_organ_donor: 'অঙ্গ দান করার অবস্থা',
+    register_organ_donor_text: 'আমি একজন অঙ্গ দানকারী',
+    register_chronic_diseases: 'দীর্ঘমেয়াদী রোগ (যদি থাকে)',
+
+    // Medical Profile
+    medical_profile_title: 'চিকিৎসা প্রোফাইল',
+    medical_profile_subtitle: 'আপনার চিকিৎসা তথ্য যোগ করুন (ঐচ্ছিক)',
+    medical_profile_save: 'চিকিৎসা তথ্য সংরক্ষণ করুন',
+    medical_profile_skip: 'এখনের জন্য এড়িয়ে যান',
 
     // Cart & Checkout
     cart_title: 'শপিং কার্ট',

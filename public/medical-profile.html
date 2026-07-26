@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="medical_profile_title">Medical Profile - Medica</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="diseases.html">Diseases</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="guidelines.html?type=national">National</a>
+            <a href="guidelines.html?type=international">International</a>
+            <a href="guidelines.html">All Guidelines</a>
+          </div>
+        </li>
+        <li><a href="investigations.html">Investigations</a></li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li><a href="reminders.html">Reminders</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="card auth-card">
+      <h2 data-i18n="medical_profile_title">Complete Your Medical Profile</h2>
+      <p class="subtitle" data-i18n="medical_profile_subtitle">Add your medical information (Optional)</p>
+      <div id="alert-container"></div>
+      <form id="medical-form">
+        <div class="form-group">
+          <label for="blood-group" data-i18n="register_blood_group">Blood Group</label>
+          <select id="blood-group">
+            <option value="">Select Blood Group</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="allergies" data-i18n="register_allergies">Allergies (if any)</label>
+          <textarea id="allergies" data-i18n="register_allergies_placeholder" placeholder="e.g., Penicillin, Peanuts, Shellfish"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="disabilities" data-i18n="register_disabilities">Disabilities (if any)</label>
+          <textarea id="disabilities" data-i18n="register_disabilities_placeholder" placeholder="e.g., Mobility issues, Visual impairment"></textarea>
+        </div>
+
+        <div class="form-group checkbox">
+          <label for="organ-donor" class="checkbox-label" data-i18n="register_organ_donor">
+            <input type="checkbox" id="organ-donor">
+            <span data-i18n="register_organ_donor_text">I am an Organ Donor</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="chronic-diseases" data-i18n="register_chronic_diseases">Chronic Diseases (if any)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" value="Diabetes" class="chronic-disease-checkbox">
+              <span>Diabetes</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" value="Asthma" class="chronic-disease-checkbox">
+              <span>Asthma</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" value="Heart Disease" class="chronic-disease-checkbox">
+              <span>Heart Disease</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" value="Hypertension" class="chronic-disease-checkbox">
+              <span>Hypertension</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" value="Thyroid" class="chronic-disease-checkbox">
+              <span>Thyroid</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" value="Kidney Disease" class="chronic-disease-checkbox">
+              <span>Kidney Disease</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1; cursor: pointer;" data-i18n="medical_profile_save">Save Medical Info</button>
+          <button type="button" class="btn btn-secondary" style="flex: 1; cursor: pointer;" onclick="skipAndGoDashboard()" data-i18n="medical_profile_skip">Skip for Now</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/language-switcher.js"></script>
+  <script>
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html';
+    }
+
+    function skipAndGoDashboard() {
+      window.location.href = '/dashboard.html';
+    }
+
+    function initializeMedicalForm() {
+      const form = document.getElementById('medical-form');
+      if (!form) {
+        console.error('Medical form not found');
+        return;
+      }
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('Medical form submitted');
+
+        const container = document.getElementById('alert-container');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        const bloodGroup = document.getElementById('blood-group').value || null;
+        const allergies = document.getElementById('allergies').value.trim() || null;
+        const disabilities = document.getElementById('disabilities').value.trim() || null;
+        const organDonor = document.getElementById('organ-donor').checked;
+        const chronicDiseases = Array.from(document.querySelectorAll('.chronic-disease-checkbox:checked'))
+          .map(cb => cb.value).join(', ') || null;
+
+        try {
+          const data = await apiFetch('/api/auth/medical-info', {
+            method: 'POST',
+            body: JSON.stringify({ bloodGroup, allergies, disabilities, organDonor, chronicDiseases })
+          });
+
+          if (data && data.message) {
+            showAlert(container, 'Medical information saved successfully!', 'success');
+            setTimeout(() => {
+              window.location.href = '/dashboard.html';
+            }, 1000);
+          } else {
+            showAlert(container, 'Medical information saved successfully!', 'success');
+            setTimeout(() => {
+              window.location.href = '/dashboard.html';
+            }, 1000);
+          }
+        } catch (err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Medical Info';
+          showAlert(container, err.message || 'Failed to save medical information');
+        }
+      });
+    }
+
+    // Initialize form when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeMedicalForm);
+    } else {
+      initializeMedicalForm();
+    }
+  </script>
+</body>
+</html>
