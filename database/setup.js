@@ -83,6 +83,9 @@ async function initDatabase() {
       image_url TEXT,
       rating REAL DEFAULT 0,
       review_count INTEGER DEFAULT 0,
+      consultation_fee REAL DEFAULT 500,
+      available_from TEXT DEFAULT '09:00',
+      available_to TEXT DEFAULT '17:00',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -213,7 +216,21 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS appointments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      doctor_id INTEGER NOT NULL,
+      appointment_date TEXT NOT NULL,
+      appointment_time TEXT NOT NULL,
+      reason TEXT,
+      status TEXT DEFAULT 'scheduled',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   migrateUserMedicalInfo(db);
+  migrateDoctorFees(db);
   migrateMedicinePrices(db);
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
@@ -248,6 +265,22 @@ function migrateUserMedicalInfo(db) {
   }
   if (!names.includes('chronic_diseases')) {
     db.run('ALTER TABLE users ADD COLUMN chronic_diseases TEXT');
+  }
+}
+
+// Add doctor fees and availability columns for existing databases
+function migrateDoctorFees(db) {
+  const columns = db.exec('PRAGMA table_info(doctors)');
+  const names = columns.length > 0 ? columns[0].values.map(c => c[1]) : [];
+
+  if (!names.includes('consultation_fee')) {
+    db.run('ALTER TABLE doctors ADD COLUMN consultation_fee REAL DEFAULT 500');
+  }
+  if (!names.includes('available_from')) {
+    db.run('ALTER TABLE doctors ADD COLUMN available_from TEXT DEFAULT "09:00"');
+  }
+  if (!names.includes('available_to')) {
+    db.run('ALTER TABLE doctors ADD COLUMN available_to TEXT DEFAULT "17:00"');
   }
 }
 

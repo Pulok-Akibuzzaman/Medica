@@ -140,4 +140,30 @@ router.post('/:id/acknowledge', authenticateToken, (req, res) => {
   }
 });
 
+router.post('/:id/notify', authenticateToken, (req, res) => {
+  try {
+    const reminderId = parseInt(req.params.id);
+    const { last_notified } = req.body;
+
+    const reminder = getOne(
+      'SELECT * FROM medicine_reminders WHERE id = ? AND user_id = ?',
+      [reminderId, req.user.id]
+    );
+
+    if (!reminder) {
+      return res.status(404).json({ error: 'Reminder not found.' });
+    }
+
+    runQuery(
+      'UPDATE medicine_reminders SET last_notified = ? WHERE id = ?',
+      [last_notified || new Date().toISOString(), reminderId]
+    );
+
+    res.json({ message: 'Reminder notification logged.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to log reminder notification.' });
+  }
+});
+
 module.exports = router;

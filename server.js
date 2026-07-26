@@ -40,6 +40,7 @@ async function start() {
   app.use('/api/cart', require('./routes/cart'));
   app.use('/api/orders', require('./routes/orders'));
   app.use('/api/reminders', require('./routes/reminders'));
+  app.use('/api/appointments', require('./routes/appointments'));
 
   app.use((err, req, res, next) => {
     console.error(err.stack);
