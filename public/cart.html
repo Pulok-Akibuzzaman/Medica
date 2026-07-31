@@ -17,15 +17,13 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="medicines.html">Medicines</a></li>
         <li><a href="doctors.html">Doctors</a></li>
-        <li><a href="diseases.html">Diseases</a></li>
-        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">Guidelines &#9662;</a>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">More &#9662;</a>
           <div class="nav-dropdown-menu">
-            <a href="guidelines.html?type=national">National</a>
-            <a href="guidelines.html?type=international">International</a>
-            <a href="guidelines.html">All Guidelines</a>
+            <a href="diseases.html">Diseases</a>
+            <a href="guidelines.html">Guidelines</a>
+            <a href="investigations.html">Investigations</a>
           </div>
         </li>
-        <li><a href="investigations.html">Investigations</a></li>
         <li><a href="chatbot.html">AI Assistant</a></li>
         
         <li><a href="reminders.html">Reminders</a></li>
@@ -114,18 +112,18 @@
 
         document.getElementById('checkout-btn').disabled = false;
         container.innerHTML = data.items.map(i => `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid var(--border)">
-            <div style="flex:1">
+          <div class="cart-item">
+            <div class="cart-item-info">
               <strong>${i.name}</strong>
-              <small style="display:block;color:var(--text-light)">${i.generic_name} — ${formatPrice(i.price)} each</small>
+              <small>${i.generic_name} — ${formatPrice(i.price)} each</small>
             </div>
-            <div style="display:flex;align-items:center;gap:0.4rem">
+            <div class="cart-item-qty">
               <button class="btn btn-sm btn-secondary" onclick="changeQty(${i.medicine_id}, ${i.quantity - 1})">−</button>
-              <span style="min-width:24px;text-align:center">${i.quantity}</span>
+              <span class="cart-item-qty-value">${i.quantity}</span>
               <button class="btn btn-sm btn-secondary" onclick="changeQty(${i.medicine_id}, ${i.quantity + 1})">+</button>
             </div>
-            <strong style="min-width:80px;text-align:right">${formatPrice(i.price * i.quantity)}</strong>
-            <button class="btn btn-sm btn-danger" onclick="removeItem(${i.medicine_id})">✕</button>
+            <strong class="cart-item-total">${formatPrice(i.price * i.quantity)}</strong>
+            <button class="btn btn-sm btn-danger cart-item-remove" onclick="removeItem(${i.medicine_id})">✕</button>
           </div>
         `).join('');
 

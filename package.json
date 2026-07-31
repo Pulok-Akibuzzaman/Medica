@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "seed": "node database/seed.js",
+    "import-medicines": "node database/import_medicines.js",
     "import-dims": "node database/scrape-dims.js",
     "seed-modules": "node database/seed-new-modules.js"
   },

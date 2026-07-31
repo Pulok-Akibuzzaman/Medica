@@ -11,7 +11,7 @@ const translations = {
     nav_guidelines_all: 'All Guidelines',
     nav_investigations: 'Investigations',
     nav_assistant: 'AI Assistant',
-    nav_admin: 'Admin',
+    nav_admin: 'Admin Panel',
     nav_login: 'Login',
     nav_register: 'Register',
     nav_logout: 'Logout',

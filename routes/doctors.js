@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
     const countParams = [];
 
     if (search) {
-      const clause = ' AND (name LIKE ? OR hospital LIKE ? OR specialty LIKE ?)';
+      const clause = ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(hospital) LIKE LOWER(?) OR LOWER(specialty) LIKE LOWER(?))';
       query += clause;
       countQuery += clause;
       const term = `%${search}%`;
