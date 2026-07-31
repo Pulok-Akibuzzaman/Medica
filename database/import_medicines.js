@@ -1,149 +1,183 @@
+// Imports the real Bangladesh medicine dataset (medicine.csv + generic.csv,
+// scraped from medex.com.bd) into the `medicines` table, replacing whatever
+// placeholder rows were seeded before.
+//
+// medicine.csv holds one row per brand/product (name, dosage form, strength,
+// manufacturer, price). generic.csv holds one row per generic/active
+// ingredient with the clinical detail (drug class, indications, dosage,
+// side effects, contraindications, precautions, etc). We join the two on
+// generic name so each brand gets real clinical text instead of placeholders.
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
-const { initDatabase, runQuery, getOne, saveDb } = require('./setup');
+const { initDatabase, runQuery, saveDb, getDb } = require('./setup');
 
-const CSV_PATH = path.join(__dirname, 'medicines.csv');
+const MEDICINE_CSV = path.join(__dirname, 'medicine.csv');
+const GENERIC_CSV = path.join(__dirname, 'generic.csv');
 
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '';
+function stripBOM(text) {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+// Parses a full CSV file's text into rows, honoring quoted fields that
+// contain commas, escaped quotes (""), and embedded newlines (generic.csv's
+// description columns contain raw HTML with real line breaks inside quotes,
+// so a line-by-line reader would split records in the wrong place).
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
-        cur += '"';
-        i++; // skip escaped quote
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
       } else {
-        inQuotes = !inQuotes;
+        field += ch;
       }
-    } else if (ch === ',' && !inQuotes) {
-      result.push(cur);
-      cur = '';
-    } else {
-      cur += ch;
+      continue;
     }
+    if (ch === '"') { inQuotes = true; continue; }
+    if (ch === ',') { row.push(field); field = ''; continue; }
+    if (ch === '\r') continue;
+    if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    field += ch;
   }
-  result.push(cur);
-  return result;
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
 }
 
-function normalizeHeader(h) {
-  if (!h) return '';
-  // remove BOM, trim, lowercase, replace non-alphanum with underscore
-  const noBOM = h.charCodeAt(0) === 0xfeff ? h.slice(1) : h;
-  return noBOM.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+function readCSV(filePath) {
+  const text = stripBOM(fs.readFileSync(filePath, 'utf8'));
+  const rows = parseCSV(text).filter(r => r.length > 1 || (r.length === 1 && r[0] !== ''));
+  const headers = rows[0];
+  return rows.slice(1).map(cols => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = cols[i] !== undefined ? cols[i] : ''; });
+    return obj;
+  });
 }
 
-function mapRowByHeaders(headers, cols) {
-  const mapped = {};
-  for (let i = 0; i < headers.length; i++) {
-    mapped[headers[i]] = cols[i] !== undefined ? cols[i] : '';
-  }
-  return mapped;
+// generic.csv's long-text columns are raw HTML fragments. Convert them to
+// short, clean plain text since the frontend renders these fields as-is.
+function stripHtml(html) {
+  if (!html) return '';
+  return html
+    // medex.com.bd embeds a hidden, truncated "preview" version of some
+    // descriptions ending in a "... Read more" toggle, immediately followed
+    // by the real full text in a separate <div class="full-str">. Drop the
+    // hidden preview so we don't end up with the text duplicated.
+    .replace(/<div class="min-str[^"]*"[^>]*>[\s\S]*?Read more/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .split('\n').map(l => l.trim()).filter(Boolean).join('\n')
+    .trim();
 }
 
-function isUrl(s) {
-  return typeof s === 'string' && /^https?:\/\//i.test(s.trim());
+function truncate(text, max) {
+  if (!text) return '';
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
 }
 
-function isPrice(s) {
-  return typeof s === 'string' && /₹|mrp|\d+\.?\d*/i.test(s);
-}
-
-function inferNameFromCols(cols) {
-  // Prefer the third column if present (observed in sample), otherwise pick the first non-URL, non-price, reasonably long value
-  if (cols[2] && typeof cols[2] === 'string' && !isUrl(cols[2]) && !isPrice(cols[2]) && cols[2].trim().length > 2) return cols[2].trim();
-  for (let i = 0; i < cols.length; i++) {
-    const c = (cols[i] || '').toString().trim();
-    if (!c) continue;
-    if (isUrl(c) || isPrice(c)) continue;
-    if (c.length < 3) continue;
-    return c;
-  }
-  return '';
+// package container looks like "100 ml bottle: ৳ 40.12" or
+// "Unit Price: ৳ 5.98,(100's pack: ৳ 598.00)" — pull the first taka amount.
+function extractPrice(packageContainer) {
+  if (!packageContainer) return 0;
+  const match = packageContainer.match(/৳\s*([\d,]+\.?\d*)/);
+  if (!match) return 0;
+  const value = parseFloat(match[1].replace(/,/g, ''));
+  return Number.isFinite(value) ? value : 0;
 }
 
 async function importMedicines() {
   await initDatabase();
 
-  if (!fs.existsSync(CSV_PATH)) {
-    console.error('medicines.csv not found at', CSV_PATH);
+  if (!fs.existsSync(MEDICINE_CSV) || !fs.existsSync(GENERIC_CSV)) {
+    console.error('medicine.csv and/or generic.csv not found in database/');
     process.exit(1);
   }
 
-  const rl = readline.createInterface({ input: fs.createReadStream(CSV_PATH) });
-  let isHeader = true;
-  let headers = [];
+  console.log('Reading generic.csv...');
+  const generics = readCSV(GENERIC_CSV);
+  const genericsByName = new Map();
+  generics.forEach(g => {
+    const key = (g['generic name'] || '').trim().toLowerCase();
+    if (key) genericsByName.set(key, g);
+  });
+  console.log(`Loaded ${genericsByName.size} generics.`);
+
+  console.log('Reading medicine.csv...');
+  const brands = readCSV(MEDICINE_CSV);
+  console.log(`Loaded ${brands.length} brand medicines.`);
+
+  const db = await getDb();
+
+  runQuery('DELETE FROM cart_items');
+  runQuery('DELETE FROM medicines');
+
+  db.run('BEGIN TRANSACTION');
+
   let imported = 0;
-
-  let totalRows = 0;
   let skipped = 0;
-  const candidateCounts = {};
-  for await (const rawLine of rl) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    if (isHeader) {
-      headers = parseCSVLine(line).map(h => normalizeHeader(h));
-      console.log('Detected headers:', headers.join(', '));
-      isHeader = false;
-      continue;
-    }
-    totalRows++;
-    const cols = parseCSVLine(line);
-    if (cols.length === 0) {
-      skipped++;
-      continue;
-    }
-    const mapped = mapRowByHeaders(headers, cols);
 
-    // Find name using common header variants, otherwise infer from columns
-    let name = mapped.name || mapped.medicine || mapped.med_name || mapped.medicine_name || mapped['medicine_name'] || mapped['drug_name'] || mapped['drug'] || '';
-    // prefer generic name if med_name missing
-    if (!name && (mapped.generic_name || mapped.generic)) {
-      name = mapped.generic_name || mapped.generic;
-    }
-    if (!name) {
-      name = inferNameFromCols(cols);
-      if (name && totalRows <= 5) console.log('Inferred name from columns:', name);
-    }
+  for (const brand of brands) {
+    const name = (brand['brand name'] || '').trim();
+    const genericName = (brand['generic'] || '').trim();
+    if (!name || !genericName) { skipped++; continue; }
 
-    // Normalize name
-    const normName = (name || '').toString().trim();
-    if (normName) candidateCounts[normName] = (candidateCounts[normName] || 0) + 1;
-    if (!name) {
-      skipped++;
-      if (totalRows <= 5) console.log('Skipping row (no name found):', cols.slice(0, 6));
-      continue;
-    }
+    const g = genericsByName.get(genericName.toLowerCase()) || {};
 
-    const exists = getOne('SELECT id FROM medicines WHERE name = ?', [name]);
-    if (!exists) {
-      const generic = mapped.generic || mapped.generic_name || mapped['generic_name'] || '';
-      const uses = mapped.uses || '';
-      const dosage = mapped.dosage || '';
-      const side_effects = mapped.side_effects || mapped.side_effect || mapped.sideeffects || '';
-      const warnings = mapped.warnings || '';
-      const category = mapped.category || 'General';
+    const category = (g['drug class'] || '').trim() || 'General';
 
-      runQuery(
-        'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, generic, uses, dosage, side_effects, warnings, category]
-      );
-      imported++;
-    }
+    const indicationText = [g['indication'], stripHtml(g['indication description'])]
+      .filter(Boolean).join(' — ');
+    const uses = truncate(indicationText, 700) || 'Consult product literature for indications.';
+
+    const dosageForm = (brand['dosage form'] || '').trim();
+    const strength = (brand['strength'] || '').trim();
+    const dosageHeader = [dosageForm, strength].filter(Boolean).join(', ');
+    const dosageBody = truncate(stripHtml(g['dosage description']), 600);
+    const dosage = [dosageHeader, dosageBody].filter(Boolean).join('\n') || 'As directed by a physician.';
+
+    const sideEffects = truncate(stripHtml(g['side effects description']), 700)
+      || 'Not commonly reported; consult a physician.';
+
+    const warningsParts = [
+      stripHtml(g['contraindications description']),
+      stripHtml(g['precautions description']),
+    ].filter(Boolean);
+    const warnings = truncate(warningsParts.join('\n'), 900)
+      || 'No specific warnings listed; use as directed by a physician.';
+
+    const price = extractPrice(brand['package container']);
+
+    runQuery(
+      'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, genericName, uses, dosage, sideEffects, warnings, category, price, 100]
+    );
+    imported++;
+    if (imported % 5000 === 0) console.log(`  imported ${imported}...`);
   }
 
+  db.run('COMMIT');
   saveDb();
-  const uniqueCandidates = Object.keys(candidateCounts).length;
-  // top 10 most frequent candidate names
-  const top = Object.entries(candidateCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  console.log(`Processed ${totalRows} row(s), skipped ${skipped} row(s).`);
-  console.log(`Found ${uniqueCandidates} unique candidate medicine names in CSV.`);
-  console.log('Top 10 candidate names and counts:');
-  top.forEach(([n, c]) => console.log(`  ${c} × ${n}`));
-  console.log(`Imported ${imported} new medicine(s) from medicines.csv`);
+
+  console.log(`Imported ${imported} medicine(s). Skipped ${skipped} row(s) missing a brand/generic name.`);
   process.exit(0);
 }
 
