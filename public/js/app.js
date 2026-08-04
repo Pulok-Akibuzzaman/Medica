@@ -39,7 +39,14 @@ async function apiFetch(url, options = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API}${url}`, { ...options, headers });
-  const data = await res.json();
+  const clone = res.clone();
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    const text = await clone.text();
+    throw new Error(`Invalid JSON response from server: ${text.slice(0, 200)}`);
+  }
 
   if (res.status === 401 || res.status === 403) {
     if (data.error && data.error.includes('expired')) {
