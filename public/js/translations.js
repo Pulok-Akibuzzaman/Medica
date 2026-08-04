@@ -22,6 +22,8 @@ const translations = {
     hero_subtitle: 'Find trusted doctors across Bangladesh, explore medicine information, and get AI-powered health guidance — all in one platform.',
     hero_btn_doctors: 'Find Doctors',
     hero_btn_medicines: 'Browse Medicines',
+    hero_badge_title: 'Emergency Health Support',
+    hero_badge_text: '24/7 • 16263 | 999',
 
     features_title: 'What We Offer',
     features_subtitle: 'Comprehensive medical information at your fingertips',
@@ -328,6 +330,8 @@ const translations = {
     hero_subtitle: 'বাংলাদেশ জুড়ে বিশ্বস্ত ডাক্তার খুঁজুন, ওষুধের তথ্য অন্বেষণ করুন এবং এআই-চালিত স্বাস্থ্য পরামর্শ পান — সবকিছু একটি প্ল্যাটফর্মে।',
     hero_btn_doctors: 'ডাক্তার খুঁজুন',
     hero_btn_medicines: 'ওষুধ ব্রাউজ করুন',
+    hero_badge_title: 'জরুরি স্বাস্থ্য সহায়তা',
+    hero_badge_text: '২৪/৭ • 16263 | 999',
 
     features_title: 'আমরা যা অফার করি',
     features_subtitle: 'আপনার হাতের মুঠোয় সম্পূর্ণ চিকিৎসা তথ্য',
