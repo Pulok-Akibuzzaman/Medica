@@ -70,6 +70,15 @@
           <button class="btn btn-primary" onclick="searchMedicines()" data-i18n="medicines_search_btn">Search</button>
         </div>
       </div>
+      <div class="filter-chips" id="category-chips">
+        <div class="filter-chip active" onclick="setMedChipFilter('all', this)">✨ All</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Pain Relief', this)">💊 Pain Relief</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Gastric', this)">🫃 Gastric</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Antibiotic', this)">🦠 Antibiotic</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Respiratory', this)">🫁 Respiratory</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Vitamins', this)">🥗 Vitamins</div>
+        <div class="filter-chip" onclick="setMedChipFilter('Cardiovascular', this)">❤️ Heart Care</div>
+      </div>
     </div>
 
     <div id="medicines-grid" class="grid grid-3">
@@ -127,18 +136,24 @@
           return;
         }
 
-        grid.innerHTML = data.medicines.map(m => `
+        grid.innerHTML = data.medicines.map(m => {
+          const formStrength = m.dosage ? m.dosage.split('\n')[0] : '';
+          return `
           <div class="card medicine-card" onclick="showMedicine(${m.id})">
-            <span class="category-badge">${m.category}</span>
-            <h3>${m.name}</h3>
-            <p class="generic">${m.generic_name}</p>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.25rem">
+              <span class="category-badge">${m.category}</span>
+              ${formStrength ? `<span style="font-size:0.72rem;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.25);padding:2px 8px;border-radius:10px;color:var(--primary);font-weight:600">${formStrength}</span>` : ''}
+            </div>
+            <h3 style="margin-top:0.25rem">${m.name}</h3>
+            <p class="generic">${m.generic_name}${formStrength ? ` &bull; <span style="color:var(--text);font-weight:500">${formStrength}</span>` : ''}</p>
             <p class="uses">${m.uses}</p>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
               <strong style="color:var(--primary)">${formatPrice(m.price)}</strong>
               <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();quickAddToCart(${m.id}, this)">🛒 ${i18n.t('medicine_add_to_cart')}</button>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
 
         renderPagination(document.getElementById('pagination'), data.page, data.totalPages, loadMedicines);
       } catch (err) {
@@ -147,6 +162,14 @@
     }
 
     function searchMedicines() {
+      loadMedicines(1);
+    }
+
+    function setMedChipFilter(val, chipEl) {
+      document.getElementById('category-filter').value = val;
+      const chips = chipEl.parentElement.querySelectorAll('.filter-chip');
+      chips.forEach(c => c.classList.remove('active'));
+      chipEl.classList.add('active');
       loadMedicines(1);
     }
 

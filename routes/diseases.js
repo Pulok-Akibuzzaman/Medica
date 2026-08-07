@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
 
     let query = 'SELECT * FROM diseases WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM diseases WHERE 1=1';
-    const params = [];
+    const whereParams = [];
     const countParams = [];
     let orderClause = 'ORDER BY name ASC';
     let orderParams = [];
@@ -20,16 +20,14 @@ router.get('/', (req, res) => {
       query += clause;
       countQuery += clause;
       const term = `%${search}%`;
-      params.push(term, term, term);
+      whereParams.push(term, term, term);
       countParams.push(term, term, term);
 
-      // Rank an exact/prefix match on the disease's own name above a
-      // coincidental hit buried in overview/symptoms text.
       orderClause = `ORDER BY
         CASE
           WHEN LOWER(name) = LOWER(?) THEN 0
           WHEN LOWER(name) LIKE LOWER(?) THEN 1
-          WHEN LOWER(name) LIKE LOWER(?) THEN 2
+          WHEN LOWER(overview) LIKE LOWER(?) THEN 2
           ELSE 3
         END ASC, name ASC`;
       orderParams = [search, `${search}%`, `%${search}%`];
@@ -38,7 +36,7 @@ router.get('/', (req, res) => {
     if (category && category !== 'all') {
       query += ' AND category = ?';
       countQuery += ' AND category = ?';
-      params.push(category);
+      whereParams.push(category);
       countParams.push(category);
     }
 
@@ -46,9 +44,9 @@ router.get('/', (req, res) => {
     const total = countRow ? countRow.total : 0;
 
     query += ` ${orderClause} LIMIT ? OFFSET ?`;
-    params.push(...orderParams, parseInt(limit), offset);
+    const finalParams = [...whereParams, ...orderParams, parseInt(limit), offset];
 
-    const diseases = getAll(query, params);
+    const diseases = getAll(query, finalParams);
     const totalPages = Math.ceil(total / parseInt(limit));
 
     res.json({ diseases, total, page: parseInt(page), totalPages });

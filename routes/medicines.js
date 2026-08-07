@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
     // brand could be buried behind dozens of unrelated matches.
     let query = 'SELECT * FROM medicines WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM medicines WHERE 1=1';
-    const params = [];
+    const whereParams = [];
     const countParams = [];
     let orderClause = 'ORDER BY name ASC';
     let orderParams = [];
@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
       query += clause;
       countQuery += clause;
       const term = `%${search}%`;
-      params.push(term, term, term);
+      whereParams.push(term, term, term);
       countParams.push(term, term, term);
 
       orderClause = `ORDER BY
@@ -44,7 +44,7 @@ router.get('/', (req, res) => {
     if (category && category !== 'all') {
       query += ' AND category = ?';
       countQuery += ' AND category = ?';
-      params.push(category);
+      whereParams.push(category);
       countParams.push(category);
     }
 
@@ -52,9 +52,9 @@ router.get('/', (req, res) => {
     const total = countRow ? countRow.total : 0;
 
     query += ` ${orderClause} LIMIT ? OFFSET ?`;
-    params.push(...orderParams, parseInt(limit), offset);
+    const finalParams = [...whereParams, ...orderParams, parseInt(limit), offset];
 
-    const medicines = getAll(query, params);
+    const medicines = getAll(query, finalParams);
     const totalPages = Math.ceil(total / parseInt(limit));
 
     res.json({ medicines, total, page: parseInt(page), totalPages });

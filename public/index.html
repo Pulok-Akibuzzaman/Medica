@@ -56,11 +56,23 @@
     <div class="hero-content">
       <h1 data-i18n="hero_title">Your Health, Our Priority</h1>
       <p data-i18n="hero_subtitle">Find trusted doctors across Bangladesh, explore medicine information, and get AI-powered health guidance — all in one platform.</p>
+      <div style="max-width:540px;margin:1.5rem auto;display:flex;gap:0.5rem;background:var(--bg-card);padding:0.4rem;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,0.15);border:1px solid var(--border)">
+        <input type="text" id="hero-search" placeholder="Search medicines, doctors, diseases..." style="flex:1;border:none;background:transparent;padding:0.5rem 1rem;font-size:0.95rem;outline:none;color:var(--text)" onkeypress="if(event.key==='Enter')handleHeroSearch()">
+        <button class="btn btn-primary" onclick="handleHeroSearch()" style="border-radius:20px;padding:0.5rem 1.25rem">🔍 Search</button>
+      </div>
       <div class="hero-actions">
         <a href="doctors.html" class="btn btn-primary" data-i18n="hero_btn_doctors">Find Doctors</a>
         <a href="medicines.html" class="btn btn-secondary" data-i18n="hero_btn_medicines">Browse Medicines</a>
       </div>
     </div>
+    <script>
+      function handleHeroSearch() {
+        const val = document.getElementById('hero-search').value.trim();
+        if (val) {
+          window.location.href = `medicines.html?search=${encodeURIComponent(val)}`;
+        }
+      }
+    </script>
   </section>
 
   <section class="features">

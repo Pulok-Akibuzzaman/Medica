@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
 
     let query = 'SELECT * FROM doctors WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM doctors WHERE 1=1';
-    const params = [];
+    const whereParams = [];
     const countParams = [];
     let orderClause = 'ORDER BY name ASC';
     let orderParams = [];
@@ -20,13 +20,9 @@ router.get('/', (req, res) => {
       query += clause;
       countQuery += clause;
       const term = `%${search}%`;
-      params.push(term, term, term);
+      whereParams.push(term, term, term);
       countParams.push(term, term, term);
 
-      // Rank an exact/prefix match on the doctor's own name above a
-      // coincidental hit in hospital or specialty text — otherwise
-      // ORDER BY name ASC sorted purely alphabetically, unrelated to how
-      // well each row actually matched the search term.
       orderClause = `ORDER BY
         CASE
           WHEN LOWER(name) = LOWER(?) THEN 0
@@ -41,14 +37,14 @@ router.get('/', (req, res) => {
     if (location && location !== 'all') {
       query += ' AND location = ?';
       countQuery += ' AND location = ?';
-      params.push(location);
+      whereParams.push(location);
       countParams.push(location);
     }
 
     if (specialty && specialty !== 'all') {
       query += ' AND specialty = ?';
       countQuery += ' AND specialty = ?';
-      params.push(specialty);
+      whereParams.push(specialty);
       countParams.push(specialty);
     }
 
@@ -56,9 +52,9 @@ router.get('/', (req, res) => {
     const total = countRow ? countRow.total : 0;
 
     query += ` ${orderClause} LIMIT ? OFFSET ?`;
-    params.push(...orderParams, parseInt(limit), offset);
+    const finalParams = [...whereParams, ...orderParams, parseInt(limit), offset];
 
-    const doctors = getAll(query, params);
+    const doctors = getAll(query, finalParams);
     const totalPages = Math.ceil(total / parseInt(limit));
 
     res.json({ doctors, total, page: parseInt(page), totalPages });

@@ -61,7 +61,13 @@
           &bull; Medicine information and dosage details<br>
           &bull; Finding doctors in Bangladesh<br>
           &bull; General health tips<br><br>
-          Try saying: <em>"I have a headache"</em> or <em>"Tell me about Napa medicine"</em><br><br>
+          <strong>Quick Questions:</strong>
+          <div class="chat-prompt-chips">
+            <span class="chat-prompt-pill" onclick="usePrompt('I have a headache and fever')">🌡️ Headache & Fever</span>
+            <span class="chat-prompt-pill" onclick="usePrompt('I need a Cardiologist in Dhaka')">🫀 Cardiologist in Dhaka</span>
+            <span class="chat-prompt-pill" onclick="usePrompt('Tell me about Napa medicine')">💊 Info on Napa</span>
+            <span class="chat-prompt-pill" onclick="usePrompt('I have stomach pain and acidity')">🤢 Stomach Pain & Acidity</span>
+          </div><br>
           ⚠️ <strong>Disclaimer:</strong> This is not a medical diagnosis. Please consult a real doctor for proper medical advice.
         </div>
       </div>
@@ -84,6 +90,11 @@
     chatInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
+
+    function usePrompt(text) {
+      chatInput.value = text;
+      sendMessage();
+    }
 
     function addMessage(text, isUser = false) {
       const div = document.createElement('div');

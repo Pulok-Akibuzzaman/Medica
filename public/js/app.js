@@ -151,6 +151,7 @@ async function addToCart(medicineId, quantity = 1) {
     body: JSON.stringify({ medicine_id: medicineId, quantity })
   });
   updateCartBadge();
+  showToast('Item added to cart! 🛒', 'success');
   return true;
 }
 
@@ -162,18 +163,24 @@ function logout() {
 // Shared "recommended medicines" card strip, used on the dashboard,
 // medicines catalog, and cart pages against /api/recommendations.
 function renderRecommendationCards(items) {
-  return items.map(m => `
+  return items.map(m => {
+    const formStrength = m.dosage ? m.dosage.split('\n')[0] : '';
+    return `
     <div class="card medicine-card" style="cursor:default">
-      <span class="category-badge">${m.category}</span>
-      <h3 style="cursor:pointer" onclick="window.location.href='medicines.html?open=${m.id}'">${m.name}</h3>
-      <p class="generic">${m.generic_name}</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.25rem">
+        <span class="category-badge">${m.category}</span>
+        ${formStrength ? `<span style="font-size:0.72rem;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.25);padding:2px 8px;border-radius:10px;color:var(--primary);font-weight:600">${formStrength}</span>` : ''}
+      </div>
+      <h3 style="cursor:pointer;margin-top:0.25rem" onclick="window.location.href='medicines.html?open=${m.id}'">${m.name}</h3>
+      <p class="generic">${m.generic_name}${formStrength ? ` &bull; <span style="color:var(--text);font-weight:500">${formStrength}</span>` : ''}</p>
       ${m.reason ? `<p style="font-size:0.8rem;color:var(--primary);margin:0.25rem 0">✨ ${m.reason}</p>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
         <strong style="color:var(--primary)">${formatPrice(m.price)}</strong>
         <button class="btn btn-primary btn-sm" onclick="recommendationAddToCart(${m.id}, this)">🛒 Add</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function recommendationAddToCart(id, btn) {
@@ -205,7 +212,44 @@ function toggleTheme() {
   if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
+function showToast(message, type = 'info', duration = 3500) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <span style="font-weight:bold">${icons[type] || 'ℹ️'}</span>
+      <span>${message}</span>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 function showAlert(container, message, type = 'error') {
+  if (!container) {
+    showToast(message, type === 'error' ? 'error' : 'success');
+    return;
+  }
   const div = document.createElement('div');
   div.className = `alert alert-${type}`;
   div.textContent = message;
