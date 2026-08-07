@@ -95,6 +95,13 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:1.5rem" id="recommended-card">
+      <h3 style="margin-bottom:1rem">✨ Recommended for You</h3>
+      <div id="recommended-grid" class="grid grid-3">
+        <p class="loading">Loading...</p>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:1.5rem">
       <h3 style="margin-bottom:1rem">🧾 Order History</h3>
       <div id="order-alert-container"></div>
@@ -263,7 +270,22 @@
       }
 
       loadOrders();
+      loadRecommendations();
     });
+
+    async function loadRecommendations() {
+      const grid = document.getElementById('recommended-grid');
+      try {
+        const data = await apiFetch('/api/recommendations?limit=6');
+        if (!data.recommendations.length) {
+          document.getElementById('recommended-card').classList.add('hidden');
+          return;
+        }
+        grid.innerHTML = renderRecommendationCards(data.recommendations);
+      } catch (e) {
+        document.getElementById('recommended-card').classList.add('hidden');
+      }
+    }
 
     const STATUS_COLORS = {
       pending: '#d69e2e', processing: '#3182ce', shipped: '#805ad5',

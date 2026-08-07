@@ -48,6 +48,11 @@
     <h1 class="page-title" data-i18n="medicines_title">Medicine Database</h1>
     <p class="page-subtitle" data-i18n="medicines_subtitle">Browse and search medicine information</p>
 
+    <div class="card hidden" id="recommended-section" style="margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem">✨ Recommended for You</h3>
+      <div id="recommended-grid" class="grid grid-3"></div>
+    </div>
+
     <div class="search-section">
       <div class="search-row">
         <div class="search-group" style="flex:2">
@@ -166,6 +171,12 @@
       try {
         const data = await apiFetch(`/api/medicines/${id}`);
         const m = data.medicine;
+        if (isLoggedIn()) {
+          apiFetch('/api/recommendations/track-view', {
+            method: 'POST',
+            body: JSON.stringify({ medicine_id: id })
+          }).catch(() => {});
+        }
         document.getElementById('medicine-detail').innerHTML = `
           <div class="detail-header">
             <span class="category-badge" style="margin-bottom:0.5rem;display:inline-block">${m.category}</span>
@@ -258,7 +269,22 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadCategories();
       loadMedicines();
+      loadRecommendedStrip();
+
+      const openId = new URLSearchParams(window.location.search).get('open');
+      if (openId) showMedicine(parseInt(openId));
     });
+
+    async function loadRecommendedStrip() {
+      const section = document.getElementById('recommended-section');
+      if (!section || !isLoggedIn()) return;
+      try {
+        const data = await apiFetch('/api/recommendations?limit=4');
+        if (!data.recommendations.length) return;
+        document.getElementById('recommended-grid').innerHTML = renderRecommendationCards(data.recommendations);
+        section.classList.remove('hidden');
+      } catch (e) { /* recommendations are non-critical */ }
+    }
   </script>
   <script src="js/language-switcher.js"></script>
 </body>

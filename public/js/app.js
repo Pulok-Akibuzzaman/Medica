@@ -159,6 +159,36 @@ function logout() {
   window.location.href = '/';
 }
 
+// Shared "recommended medicines" card strip, used on the dashboard,
+// medicines catalog, and cart pages against /api/recommendations.
+function renderRecommendationCards(items) {
+  return items.map(m => `
+    <div class="card medicine-card" style="cursor:default">
+      <span class="category-badge">${m.category}</span>
+      <h3 style="cursor:pointer" onclick="window.location.href='medicines.html?open=${m.id}'">${m.name}</h3>
+      <p class="generic">${m.generic_name}</p>
+      ${m.reason ? `<p style="font-size:0.8rem;color:var(--primary);margin:0.25rem 0">✨ ${m.reason}</p>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
+        <strong style="color:var(--primary)">${formatPrice(m.price)}</strong>
+        <button class="btn btn-primary btn-sm" onclick="recommendationAddToCart(${m.id}, this)">🛒 Add</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function recommendationAddToCart(id, btn) {
+  try {
+    const added = await addToCart(id);
+    if (added && btn) {
+      const original = btn.textContent;
+      btn.textContent = '✓ Added';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 function initTheme() {
   const saved = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
@@ -265,10 +295,214 @@ function simpleMarkdown(text) {
     .replace(/- (.+)/g, '&bull; $1');
 }
 
+// --- Global medicine reminder polling ---
+// Runs on every page (not just reminders.html) so a due reminder still
+// notifies the user no matter what part of the site they're on.
+//
+// The native browser Notification is NOT relied on as the primary alert:
+// requestPermission() only reliably grants when triggered by a direct user
+// click, and startReminderPolling() below calls it automatically on page
+// load — most browsers silently ignore or auto-deny that, and even a
+// granted permission can be suppressed at the OS level (e.g. Windows Focus
+// Assist) with no error thrown, so the "notification" can silently be a
+// no-op while the alarm sound (Web Audio, unrelated to that permission)
+// still plays. The self-contained in-page overlay below is what the user
+// actually sees on every page; the native notification is a bonus on top
+// when it happens to be available.
+function playReminderAlarm() {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  } catch (e) { /* audio not available */ }
+}
+
+let activeReminderId = null;
+
+function ensureGlobalReminderOverlay() {
+  let overlay = document.getElementById('global-reminder-overlay');
+  if (overlay) return overlay;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #global-reminder-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 99999;
+    }
+    #global-reminder-overlay .grm-card {
+      background: var(--bg-card, #fff);
+      border-radius: var(--radius, 12px);
+      padding: 2rem; max-width: 420px; width: 90%;
+      box-shadow: var(--shadow-lg, 0 10px 40px rgba(0,0,0,0.3));
+      text-align: center;
+    }
+    #global-reminder-overlay .grm-icon { font-size: 3.5rem; margin-bottom: 0.75rem; }
+    #global-reminder-overlay .grm-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text, #1a202c); }
+    #global-reminder-overlay .grm-message { font-size: 1rem; color: var(--text-light, #718096); margin-bottom: 1.5rem; line-height: 1.5; }
+    #global-reminder-overlay .grm-actions { display: flex; gap: 0.75rem; justify-content: center; }
+    #global-reminder-overlay .grm-actions button {
+      flex: 1; padding: 0.75rem 1rem; border: none; border-radius: 6px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    #global-reminder-overlay .grm-btn-primary { background: var(--primary, #2b6cb0); color: #fff; }
+    #global-reminder-overlay .grm-btn-secondary { background: var(--border, #e2e8f0); color: var(--text, #1a202c); }
+  `;
+  document.head.appendChild(style);
+
+  overlay = document.createElement('div');
+  overlay.id = 'global-reminder-overlay';
+  overlay.innerHTML = `
+    <div class="grm-card">
+      <div class="grm-icon">💊</div>
+      <div class="grm-title">Time to Take Medicine!</div>
+      <div class="grm-message" id="grm-message"></div>
+      <div class="grm-actions">
+        <button class="grm-btn-primary" id="grm-ack-btn">I Took It ✓</button>
+        <button class="grm-btn-secondary" id="grm-snooze-btn">Snooze 10 min</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('grm-ack-btn').addEventListener('click', async () => {
+    if (activeReminderId) {
+      try { await apiFetch(`/api/reminders/${activeReminderId}/acknowledge`, { method: 'POST' }); } catch (e) {}
+    }
+    overlay.style.display = 'none';
+    activeReminderId = null;
+  });
+  document.getElementById('grm-snooze-btn').addEventListener('click', async () => {
+    if (activeReminderId) {
+      try {
+        await apiFetch(`/api/reminders/${activeReminderId}/snooze`, {
+          method: 'POST', body: JSON.stringify({ minutes: 10 })
+        });
+      } catch (e) {}
+    }
+    overlay.style.display = 'none';
+    activeReminderId = null;
+  });
+
+  overlay.style.display = 'none';
+  return overlay;
+}
+
+function showGlobalReminderOverlay(medicineName, dosage, reminderId) {
+  activeReminderId = reminderId;
+  const overlay = ensureGlobalReminderOverlay();
+  document.getElementById('grm-message').textContent = dosage
+    ? `Take ${medicineName} - ${dosage}`
+    : `Take your ${medicineName}`;
+  overlay.style.display = 'flex';
+}
+
+function fireReminderNotification(reminder) {
+  playReminderAlarm();
+
+  // reminders.html defines its own showReminderModal with a richer
+  // in-page modal wired to its own reminder list refresh — prefer that
+  // when present so the user isn't shown two overlays on that page.
+  // Everywhere else, the self-contained global overlay above is used, so
+  // the popup is guaranteed to appear regardless of native Notification
+  // permission state.
+  if (typeof window.showReminderModal === 'function') {
+    window.showReminderModal(reminder.medicine_name, reminder.dosage, reminder.id);
+  } else {
+    showGlobalReminderOverlay(reminder.medicine_name, reminder.dosage, reminder.id);
+  }
+
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    try {
+      const message = reminder.dosage
+        ? `Take ${reminder.medicine_name} - ${reminder.dosage}`
+        : `Take your ${reminder.medicine_name}`;
+      const notification = new Notification('💊 Medicine Reminder', {
+        body: message,
+        tag: `reminder-${reminder.id}`,
+        requireInteraction: true,
+        badge: '🏥',
+        silent: false
+      });
+      notification.onclick = () => {
+        window.focus();
+        window.location.href = '/reminders.html';
+        notification.close();
+      };
+    } catch (e) { /* notification failed to show */ }
+  }
+}
+
+function checkReminders() {
+  if (!isLoggedIn()) return;
+
+  apiFetch('/api/reminders').then(data => {
+    if (!data.reminders || data.reminders.length === 0) return;
+
+    const now = new Date();
+    const dayAbbr = now.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase().slice(0, 3);
+
+    data.reminders.forEach(reminder => {
+      if (!reminder.is_active) return;
+
+      if (reminder.snoozed_until) {
+        const snoozeTime = new Date(reminder.snoozed_until);
+        if (now < snoozeTime) return;
+      }
+
+      const [remHour, remMin] = reminder.reminder_time.split(':').map(Number);
+      const scheduledToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), remHour, remMin, 0, 0);
+      const secondsSinceScheduled = (now - scheduledToday) / 1000;
+
+      const lastNotified = reminder.last_notified ? new Date(reminder.last_notified) : null;
+
+      // Due if the scheduled time has passed today (within a grace window,
+      // so a throttled/slow poll tick still catches it) and we haven't
+      // already notified for today's slot.
+      const GRACE_WINDOW_SECONDS = 15 * 60;
+      const isTimeDue = secondsSinceScheduled >= 0 && secondsSinceScheduled <= GRACE_WINDOW_SECONDS;
+      const alreadyNotifiedForThisSlot = lastNotified && lastNotified >= scheduledToday;
+
+      const isDayMatch = reminder.days_of_week === 'daily' ||
+        reminder.days_of_week.split(',').includes(dayAbbr) ||
+        (reminder.days_of_week === 'weekdays' && !['sat', 'sun'].includes(dayAbbr)) ||
+        (reminder.days_of_week === 'weekends' && ['sat', 'sun'].includes(dayAbbr));
+
+      if (isTimeDue && isDayMatch && !alreadyNotifiedForThisSlot) {
+        fireReminderNotification(reminder);
+
+        apiFetch(`/api/reminders/${reminder.id}/notify`, {
+          method: 'POST',
+          body: JSON.stringify({ last_notified: new Date().toISOString() })
+        }).catch(() => {});
+      }
+    });
+  }).catch(() => {});
+}
+
+function startReminderPolling() {
+  if (!isLoggedIn()) return;
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+  checkReminders();
+  setInterval(checkReminders, 10000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   updateNav();
   initNavTranslations();
+  startReminderPolling();
 
   const hamburger = document.getElementById('hamburger');
   const navLinks = document.getElementById('nav-links');

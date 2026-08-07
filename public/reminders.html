@@ -739,7 +739,7 @@
         return;
       }
 
-      playAlarmSound();
+      playReminderAlarm();
       showReminderModal('Napa', '1 tablet with water', null);
 
       if (Notification.permission === 'granted') {
@@ -766,110 +766,15 @@
       }
     }
 
-    function checkReminders() {
-      apiFetch('/api/reminders').then(data => {
-        const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-
-        console.log(`[${now.toLocaleTimeString()}] Checking reminders. Current time: ${currentTime}, Day: ${dayName}`);
-
-        if (!data.reminders || data.reminders.length === 0) {
-          console.log('No reminders found');
-          return;
-        }
-
-        data.reminders.forEach(reminder => {
-          console.log(`Checking reminder: ${reminder.medicine_name}, Active: ${reminder.is_active}, Time: ${reminder.reminder_time}`);
-
-          if (!reminder.is_active) {
-            console.log(`  → Skipped (inactive)`);
-            return;
-          }
-
-          if (reminder.snoozed_until) {
-            const snoozeTime = new Date(reminder.snoozed_until);
-            if (now < snoozeTime) {
-              console.log(`  → Snoozed until ${snoozeTime.toLocaleTimeString()}`);
-              return;
-            }
-          }
-
-          const [remHour, remMin] = reminder.reminder_time.split(':');
-          const remTime = `${String(remHour).padStart(2, '0')}:${String(remMin).padStart(2, '0')}`;
-
-          const lastNotified = reminder.last_notified ? new Date(reminder.last_notified) : null;
-          const timeSinceLastNotification = lastNotified ? (now - lastNotified) / 1000 : 9999; // seconds
-
-          const isTimeMatch = remTime === currentTime;
-          const isDayMatch = reminder.days_of_week === 'daily' ||
-            reminder.days_of_week.includes(dayName) ||
-            (reminder.days_of_week === 'weekdays' && !['saturday', 'sunday'].includes(dayName)) ||
-            (reminder.days_of_week === 'weekends' && ['saturday', 'sunday'].includes(dayName));
-          const isNotDuplicate = timeSinceLastNotification > 300;
-
-          console.log(`  → Time match: ${isTimeMatch} (${remTime} vs ${currentTime}), Day match: ${isDayMatch}, Not duplicate: ${isNotDuplicate} (${timeSinceLastNotification}s since last)`);
-
-          if (isTimeMatch && isDayMatch && isNotDuplicate) {
-            console.log(`✅ REMINDER TRIGGERED: ${reminder.medicine_name} at ${currentTime}`);
-            playAlarmSound();
-            showReminderModal(reminder.medicine_name, reminder.dosage, reminder.id);
-
-            // Update last_notified time
-            apiFetch(`/api/reminders/${reminder.id}/notify`, {
-              method: 'POST',
-              body: JSON.stringify({ last_notified: new Date().toISOString() })
-            }).catch(err => console.error('Failed to update notification time:', err));
-
-            if (Notification.permission === 'granted') {
-              try {
-                const message = reminder.dosage
-                  ? `Take ${reminder.medicine_name} - ${reminder.dosage}`
-                  : `Take your ${reminder.medicine_name}`;
-
-                new Notification('💊 Medicine Reminder', {
-                  body: message,
-                  tag: `reminder-${reminder.id}`,
-                  requireInteraction: true,
-                  badge: '🏥',
-                  silent: false
-                });
-              } catch (e) {
-                console.error('Notification error:', e);
-              }
-            } else {
-              console.warn('Notifications not granted. Permission status:', Notification.permission);
-            }
-          }
-        });
-      }).catch(err => console.error('Reminder check failed:', err));
-    }
-
-    function playAlarmSound() {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    }
+    // checkReminders() / playReminderAlarm() / the polling loop itself now
+    // live in js/app.js so reminders still fire on every page, not just
+    // this one. showReminderModal (below) is picked up automatically by
+    // app.js's fireReminderNotification() when it's defined, which is only
+    // true on this page.
 
     document.addEventListener('DOMContentLoaded', () => {
       loadReminders();
       enableNotifications();
-
-      // Check reminders every 10 seconds for better accuracy
-      checkReminders();
-      setInterval(checkReminders, 10000);
     });
   </script>
   <script src="js/language-switcher.js"></script>

@@ -12,6 +12,8 @@ router.get('/', (req, res) => {
     let countQuery = 'SELECT COUNT(*) as total FROM doctors WHERE 1=1';
     const params = [];
     const countParams = [];
+    let orderClause = 'ORDER BY name ASC';
+    let orderParams = [];
 
     if (search) {
       const clause = ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(hospital) LIKE LOWER(?) OR LOWER(specialty) LIKE LOWER(?))';
@@ -20,6 +22,20 @@ router.get('/', (req, res) => {
       const term = `%${search}%`;
       params.push(term, term, term);
       countParams.push(term, term, term);
+
+      // Rank an exact/prefix match on the doctor's own name above a
+      // coincidental hit in hospital or specialty text — otherwise
+      // ORDER BY name ASC sorted purely alphabetically, unrelated to how
+      // well each row actually matched the search term.
+      orderClause = `ORDER BY
+        CASE
+          WHEN LOWER(name) = LOWER(?) THEN 0
+          WHEN LOWER(name) LIKE LOWER(?) THEN 1
+          WHEN LOWER(specialty) = LOWER(?) THEN 2
+          WHEN LOWER(name) LIKE LOWER(?) THEN 3
+          ELSE 4
+        END ASC, name ASC`;
+      orderParams = [search, `${search}%`, search, `%${search}%`];
     }
 
     if (location && location !== 'all') {
@@ -39,8 +55,8 @@ router.get('/', (req, res) => {
     const countRow = getOne(countQuery, countParams);
     const total = countRow ? countRow.total : 0;
 
-    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ${orderClause} LIMIT ? OFFSET ?`;
+    params.push(...orderParams, parseInt(limit), offset);
 
     const doctors = getAll(query, params);
     const totalPages = Math.ceil(total / parseInt(limit));

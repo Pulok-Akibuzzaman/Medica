@@ -224,6 +224,15 @@ async function initDatabase() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS medicine_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      medicine_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS appointments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -242,6 +251,7 @@ async function initDatabase() {
   migrateMedicinePrices(db);
   migrateCancellationReason(db);
   migrateDeliveryTracking(db);
+  db.run('CREATE INDEX IF NOT EXISTS idx_medicine_views_user ON medicine_views(user_id, created_at)');
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bdmedical.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';

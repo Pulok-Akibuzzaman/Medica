@@ -12,6 +12,8 @@ router.get('/', (req, res) => {
     let countQuery = 'SELECT COUNT(*) as total FROM guidelines WHERE 1=1';
     const params = [];
     const countParams = [];
+    let orderClause = 'ORDER BY publication_date DESC, title ASC';
+    let orderParams = [];
 
     if (type && type !== 'all') {
       query += ' AND type = ?';
@@ -27,6 +29,18 @@ router.get('/', (req, res) => {
       const term = `%${search}%`;
       params.push(term, term, term);
       countParams.push(term, term, term);
+
+      // When actually searching, rank an exact/prefix match on the title
+      // above a coincidental hit in description/authority text or the
+      // newest-first default.
+      orderClause = `ORDER BY
+        CASE
+          WHEN LOWER(title) = LOWER(?) THEN 0
+          WHEN LOWER(title) LIKE LOWER(?) THEN 1
+          WHEN LOWER(title) LIKE LOWER(?) THEN 2
+          ELSE 3
+        END ASC, publication_date DESC, title ASC`;
+      orderParams = [search, `${search}%`, `%${search}%`];
     }
 
     if (category && category !== 'all') {
@@ -39,8 +53,8 @@ router.get('/', (req, res) => {
     const countRow = getOne(countQuery, countParams);
     const total = countRow ? countRow.total : 0;
 
-    query += ' ORDER BY publication_date DESC, title ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ${orderClause} LIMIT ? OFFSET ?`;
+    params.push(...orderParams, parseInt(limit), offset);
 
     const guidelines = getAll(query, params);
     const totalPages = Math.ceil(total / parseInt(limit));

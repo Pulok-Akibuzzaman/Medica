@@ -5,230 +5,399 @@ const { authenticateToken } = require('../middleware/auth');
 
 const DISCLAIMER = '\n\n⚠️ **Disclaimer:** This is not a medical diagnosis. Please consult a real doctor for proper medical advice.';
 
-const symptomDatabase = {
-  headache: {
-    specialties: ['Neurology'],
-    medicines: ['Napa (Paracetamol)', 'Ace Plus (Paracetamol + Caffeine)'],
-    advice: 'Headaches can be caused by stress, dehydration, lack of sleep, or underlying conditions. Rest, stay hydrated, and consider over-the-counter pain relief like Paracetamol (500mg-1000mg). If headaches are severe, frequent, or accompanied by vision changes, seek immediate medical attention.'
-  },
-  fever: {
-    specialties: ['Pediatrics'],
-    medicines: ['Napa (Paracetamol 500mg)', 'Ace Plus'],
-    advice: 'Fever is usually a sign of infection. Take Paracetamol to reduce temperature, drink plenty of fluids, and rest. If fever exceeds 103°F (39.4°C), lasts more than 3 days, or is accompanied by severe symptoms, see a doctor immediately.'
-  },
-  stomach: {
-    specialties: ['Gastroenterology'],
-    medicines: ['Seclo (Omeprazole)', 'Algin (Antacid)'],
-    advice: 'Stomach pain can range from indigestion to serious conditions. For mild acidity, antacids or Omeprazole may help. Avoid spicy food and eat smaller meals. If pain is severe, persistent, or accompanied by vomiting blood, seek emergency care.'
-  },
-  cough: {
-    specialties: ['Pulmonology', 'ENT'],
-    medicines: ['Histacin (Chlorpheniramine)', 'Amoxil (Amoxicillin) - only with prescription'],
-    advice: 'A cough can be caused by cold, allergies, or infections. Stay hydrated, use honey with warm water, and rest. For persistent cough lasting more than 2 weeks, especially with blood or breathlessness, consult a pulmonologist.'
-  },
-  chest: {
-    specialties: ['Cardiology'],
-    medicines: [],
-    advice: '🚨 **Chest pain requires immediate medical attention.** It could indicate a heart attack, angina, or other serious conditions. Do NOT self-medicate. Call emergency services or go to the nearest hospital immediately.'
-  },
-  allergy: {
-    specialties: ['Dermatology', 'ENT'],
-    medicines: ['Histacin (Chlorpheniramine)', 'Monas (Montelukast)'],
-    advice: 'Allergic reactions can cause sneezing, rash, or swelling. Antihistamines like Chlorpheniramine can help. Identify and avoid triggers. For severe reactions (difficulty breathing, swelling of throat), seek emergency care immediately.'
-  },
-  diabetes: {
-    specialties: ['Endocrinology'],
-    medicines: ['Metformin (with prescription only)'],
-    advice: 'Diabetes requires proper medical management. Monitor blood sugar regularly, follow a balanced diet, exercise regularly, and take medications as prescribed. Regular check-ups with an endocrinologist are essential.'
-  },
-  pressure: {
-    specialties: ['Cardiology'],
-    medicines: ['Losartan (with prescription)', 'Amlodipine (with prescription)'],
-    advice: 'High blood pressure needs ongoing management. Reduce salt intake, exercise regularly, manage stress, and take prescribed medications. Monitor BP at home and visit your cardiologist regularly.'
-  },
-  skin: {
-    specialties: ['Dermatology'],
-    medicines: [],
-    advice: 'Skin conditions vary widely - from eczema to infections. Keep the affected area clean and dry. Avoid scratching. For persistent rashes, unusual moles, or spreading infections, consult a dermatologist.'
-  },
-  eye: {
-    specialties: ['Ophthalmology'],
-    medicines: [],
-    advice: 'Eye problems should be evaluated by an ophthalmologist. Do not self-medicate with eye drops. For sudden vision loss, eye pain, or injury, seek immediate medical attention.'
-  },
-  ear: {
-    specialties: ['ENT'],
-    medicines: [],
-    advice: 'Ear problems including pain, discharge, or hearing loss should be evaluated by an ENT specialist. Do not insert objects into the ear canal. For sudden hearing loss, see a doctor immediately.'
-  },
-  bone: {
-    specialties: ['Orthopedics'],
-    medicines: ['Napa (Paracetamol)', 'Calcium-D (Calcium + Vitamin D3)'],
-    advice: 'Bone and joint pain can be due to injury, arthritis, or deficiency. Rest the affected area, apply ice for swelling, and take pain relief. For fractures, persistent pain, or mobility issues, consult an orthopedic specialist.'
-  },
-  mental: {
-    specialties: ['Psychiatry'],
-    medicines: [],
-    advice: 'Mental health is as important as physical health. If you are experiencing anxiety, depression, or other mental health concerns, please reach out to a psychiatrist or counselor. You are not alone, and professional help is available.'
-  },
-  depression: {
-    specialties: ['Psychiatry'],
-    medicines: [],
-    advice: 'Depression is a treatable condition. Please reach out to a psychiatrist or mental health professional. Talk therapy and medication can be very effective. You are not alone - help is available.'
-  },
-  anxiety: {
-    specialties: ['Psychiatry'],
-    medicines: [],
-    advice: 'Anxiety can be managed with professional help. Practice deep breathing, regular exercise, and adequate sleep. If anxiety affects your daily life, consult a psychiatrist for proper evaluation and treatment.'
-  },
-  urinary: {
-    specialties: ['Urology', 'Nephrology'],
-    medicines: ['Ciprocin (Ciprofloxacin) - only with prescription'],
-    advice: 'Urinary problems like burning, frequency, or blood in urine need medical evaluation. Drink plenty of water. For UTIs, antibiotics may be prescribed by a doctor. Do not self-medicate with antibiotics.'
-  },
-  child: {
-    specialties: ['Pediatrics'],
-    medicines: [],
-    advice: 'Children require specialized medical care. For fever, give age-appropriate Paracetamol doses. Keep them hydrated. For any concerning symptoms, consult a pediatrician promptly.'
-  },
-  pregnant: {
-    specialties: ['Gynecology'],
-    medicines: [],
-    advice: 'Pregnancy requires regular medical monitoring. Visit a gynecologist for prenatal care. Do NOT take any medication without consulting your doctor during pregnancy.'
-  },
-  heart: {
-    specialties: ['Cardiology'],
-    medicines: [],
-    advice: 'Heart-related symptoms need prompt medical evaluation. Do not ignore chest pain, shortness of breath, or palpitations. Maintain a heart-healthy lifestyle and see a cardiologist for regular check-ups.'
-  },
-  breathing: {
-    specialties: ['Pulmonology'],
-    medicines: ['Monas (Montelukast)'],
-    advice: 'Breathing difficulties can be caused by asthma, infections, or heart conditions. If you experience sudden severe shortness of breath, seek emergency care. For chronic breathing issues, consult a pulmonologist.'
-  }
-};
+const GREETING_RE = /\b(hi|hello|hey|assalamu|salam|greetings)\b/;
+const THANKS_RE = /\b(thank|thanks|dhonnobad|shukria)\b/;
 
-function generateResponse(message) {
+// Basic questions about the bot itself — checked before the medical-topic
+// gate so "what's your name" / "what is this" doesn't fall through to
+// medicine-name scanning (a plain "what is X" pattern previously matched
+// this and, worse, once matched the brand "Nameso" off the word "name").
+const BOT_IDENTITY_RE = /\b(your name|who are you|what are you|what can you do|what do you do|how (do|can) you (help|work))\b/;
+
+// Phrases that ask the bot to name a disease/condition outright rather than
+// offer guidance — declined the same way regardless of what symptom words
+// are also present in the message.
+const DIAGNOSIS_REQUEST_RE = /\b(do i have|am i having|is this|could this be|does this mean i have|diagnose me|what disease do i have|what('?s| is) wrong with me)\b/;
+
+// Red-flag symptom combinations that need an unambiguous "seek emergency
+// care now" response instead of medicine suggestions or a specialist list —
+// checked before anything else so nothing (including a matched medicine
+// name) can push this response further down or crowd it out.
+const EMERGENCY_RULES = [
+  { re: /\bchest (pain|tight|pressure|discomfort)\b/, label: 'chest pain' },
+  { re: /\b(can'?t|cannot|difficulty) breath(e|ing)\b|\bshortness of breath\b|\bstruggling to breathe\b/, label: 'severe breathing difficulty' },
+  { re: /\b(severe|sudden|worst) headache\b.*\b(vision|confus|numb|slurr)/, label: 'possible stroke symptoms' },
+  { re: /\b(face|arm|speech) (drooping|numb|slurred|weakness)\b|\bslurred speech\b/, label: 'possible stroke symptoms' },
+  { re: /\bsuicid|self.?harm|kill myself\b/, label: 'a mental health crisis' },
+  { re: /\bunconscious|not breathing|no pulse|severe bleeding|coughing (up )?blood\b/, label: 'a life-threatening emergency' }
+];
+
+// Non-medical small talk / off-topic requests get redirected instead of
+// forced through symptom/medicine matching, which used to just fall through
+// to "I don't understand" for anything that didn't contain a known keyword.
+// "ache"/"pain" have no leading \b: they're meant to also match as a suffix
+// ("headache", "backpain") — a leading \b would require them as whole words
+// and silently miss "headache" (no word boundary between 'd' and 'a').
+const MEDICAL_SIGNAL_RE = /(pain|ache)|\b(hurt|fever|cough|cold|flu|sick|ill|symptom|medicine|drug|tablet|capsule|syrup|dose|dosage|doctor|specialist|hospital|clinic|appointment|disease|condition|diagnos|treatment|guideline|test|investigation|scan|checkup|check-up|allerg|side effect|price|cost|prescri|health|blood|surgery|infection)\b/;
+
+// "Tell me about X" / "what is X" phrasing signals a specific-item lookup
+// (medicine name) without needing a generic keyword like "medicine" — used
+// only to widen the medicine-ask trigger, never to justify a loose
+// substring scan of the whole sentence. Requires a trailing subject so bare
+// "what is..." questions (e.g. "what is your name") don't count — those are
+// handled by BOT_IDENTITY_RE / the off-topic gate instead.
+const MEDICINE_LOOKUP_PHRASE_RE = /\b(?:tell me about|info(?:rmation)? on|details (?:on|about))\s+\w+|\b(?:what is|what'?s)\s+(?!your\b|this\b|that\b|wrong\b|it\b)\w+/;
+
+// Common-symptom -> appropriate OTC generic mapping, used only to suggest
+// medicine categories worth asking a pharmacist about — never a specific
+// dose. Deliberately small and hand-picked (not derived from free-text
+// search over the `uses` column) because a plain keyword search over that
+// field surfaces irrelevant noise on a 20k+ row dataset (e.g. a supplement
+// whose long indications list happens to mention "headache" once). Real
+// price/stock for each generic is still looked up live against the
+// database, never hardcoded.
+const OTC_SYMPTOM_MAP = [
+  { re: /\bheadache\b/, generics: ['Paracetamol'] },
+  { re: /\bfever\b/, generics: ['Paracetamol'] },
+  { re: /\b(body ?ache|muscle pain|joint pain)\b/, generics: ['Paracetamol', 'Diclofenac'] },
+  { re: /\b(acidity|heartburn|indigestion|gerd|acid reflux)\b/, generics: ['Omeprazole'] },
+  { re: /\b(runny nose|sneezing|allerg|itchy eyes|hives|rash)\b/, generics: ['Cetirizine', 'Loratadine'] },
+  { re: /\bcough\b/, generics: ['Ambroxol', 'Dextromethorphan'] },
+  { re: /\b(diarrh(o|e)a|loose motion)\b/, generics: ['Loperamide', 'Oral Rehydration Salt'] },
+  { re: /\b(nausea|vomit)\b/, generics: ['Domperidone'] }
+];
+
+// Looks up the cheapest in-stock brand for each generic name, in order,
+// stopping once a handful have been found — used for OTC_SYMPTOM_MAP.
+function findOtcSuggestions(lower, allergyTerms, chronicTerms) {
+  const matchedGenerics = new Set();
+  for (const rule of OTC_SYMPTOM_MAP) {
+    if (rule.re.test(lower)) rule.generics.forEach(g => matchedGenerics.add(g));
+  }
+  const suggestions = [];
+  for (const generic of matchedGenerics) {
+    const candidates = getAll(
+      'SELECT id, name, generic_name, price, stock FROM medicines WHERE LOWER(generic_name) LIKE ? AND stock > 0 ORDER BY price ASC LIMIT 5',
+      [`%${generic.toLowerCase()}%`]
+    );
+    const safe = candidates.find(c => !isUnsafeForUser({ ...c, warnings: '', side_effects: '' }, allergyTerms, chronicTerms));
+    if (safe) suggestions.push(safe);
+  }
+  return suggestions.slice(0, 4);
+}
+
+// Words to ignore when pulling a probable medicine name out of a sentence.
+// This scan only ever runs once the message has already been confirmed to
+// be an explicit medicine lookup (wantsMedicineInfo) — it is deliberately
+// NOT used to opportunistically guess a medicine from an arbitrary symptom
+// sentence, because ordinary English words are substrings of real brand
+// names often enough to produce nonsense matches (e.g. "pain" -> "Painthol",
+// "feel" -> "Feelfree", "napa" as a bare substring -> "Sonapata").
+const MED_STOPWORDS = new Set(['medicine', 'medicines', 'drug', 'drugs', 'about', 'tell', 'what', 'whats', 'capsule',
+  'tablet', 'tablets', 'syrup', 'the', 'this', 'that', 'for', 'and', 'price', 'cost', 'much', 'does', 'info',
+  'information', 'details', 'give', 'show', 'find', 'search']);
+
+function splitList(text) {
+  if (!text) return [];
+  return text.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function tokenize(text) {
+  if (!text) return [];
+  return text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+// True if a medicine's name/generic overlaps a user-listed allergy, or a
+// chronic condition appears in its warnings/side-effects text as something
+// to avoid.
+function isUnsafeForUser(medicine, allergyTerms, chronicTerms) {
+  const nameLower = medicine.name.toLowerCase();
+  const genericLower = medicine.generic_name.toLowerCase();
+  const warningsLower = (medicine.warnings || '').toLowerCase();
+  const sideEffectsLower = (medicine.side_effects || '').toLowerCase();
+
+  for (const term of allergyTerms) {
+    if (term.length > 2 && (nameLower.includes(term) || genericLower.includes(term))) {
+      return `may trigger your listed allergy to ${term}`;
+    }
+  }
+  for (const term of chronicTerms) {
+    if (term.length > 3 && (warningsLower.includes(term) || sideEffectsLower.includes(term))) {
+      return `carries a warning related to your ${term}`;
+    }
+  }
+  return null;
+}
+
+function formatMedicineLine(m) {
+  return `- **${m.name}** (${m.generic_name}) — ৳${Number(m.price || 0).toFixed(2)}${m.stock > 0 ? '' : ' — _out of stock_'}`;
+}
+
+function formatDoctorLine(d) {
+  const ratingStr = d.review_count > 0 ? ` — ⭐${Number(d.rating).toFixed(1)} (${d.review_count} review${d.review_count === 1 ? '' : 's'})` : '';
+  return `- **${d.name}** — ${d.specialty} at ${d.hospital}, ${d.location} — ৳${Number(d.consultation_fee).toFixed(0)} consultation${ratingStr}`;
+}
+
+// allowSubstringMatch: when false (the default, used for opportunistically
+// scanning a message that never explicitly asked about a medicine), only
+// exact-name or name-starts-with hits count. Common English words are
+// substrings of real brand names often enough (e.g. "pain" -> "Painthol",
+// "feel" -> "Feelfree") that a loose substring search on an unconstrained
+// sentence produces false positives; it's only safe once the user has
+// clearly signalled a medicine lookup (wantsMedicineInfo).
+function findMedicineMention(lower, allowSubstringMatch = false) {
+  const words = lower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
+    .filter(w => w.length > 3 && !MED_STOPWORDS.has(w));
+
+  for (const word of words) {
+    const med = getOne(
+      `SELECT *,
+         CASE
+           WHEN LOWER(name) = ? THEN 0
+           WHEN LOWER(name) LIKE ? THEN 1
+           WHEN LOWER(generic_name) = ? THEN 2
+           WHEN LOWER(generic_name) LIKE ? THEN 3
+           ELSE 4
+         END AS rank
+       FROM medicines
+       WHERE LOWER(name) = ? OR LOWER(name) LIKE ?
+          OR LOWER(generic_name) = ? OR LOWER(generic_name) LIKE ?
+          ${allowSubstringMatch ? 'OR LOWER(name) LIKE ? OR LOWER(generic_name) LIKE ?' : ''}
+       ORDER BY rank ASC, LENGTH(name) ASC LIMIT 1`,
+      allowSubstringMatch
+        ? [word, `${word}%`, word, `${word}%`, word, `${word}%`, word, `${word}%`, `%${word}%`, `%${word}%`]
+        : [word, `${word}%`, word, `${word}%`, word, `${word}%`, word, `${word}%`]
+    );
+    if (med) return med;
+  }
+  return null;
+}
+
+function buildSpecialtiesFromSymptoms(lower) {
+  // Match the free-text query against real disease records (name + symptoms
+  // columns) instead of a fixed keyword dictionary, so it scales with
+  // whatever is actually in the diseases table.
+  const words = tokenize(lower).filter(w => w.length > 3);
+  if (words.length === 0) return { diseases: [], specialties: [] };
+
+  const clauses = words.map(() => '(LOWER(name) LIKE ? OR LOWER(symptoms) LIKE ?)').join(' OR ');
+  const params = words.flatMap(w => [`%${w}%`, `%${w}%`]);
+
+  const matches = getAll(
+    `SELECT id, name, category, symptoms, related_specialties FROM diseases WHERE ${clauses} LIMIT 5`,
+    params
+  );
+
+  const specialties = new Set();
+  for (const d of matches) {
+    if (d.related_specialties) {
+      d.related_specialties.split(',').map(s => s.trim()).filter(Boolean).forEach(s => specialties.add(s));
+    }
+  }
+  return { diseases: matches, specialties: Array.from(specialties) };
+}
+
+function generateResponse(message, user) {
   const lower = message.toLowerCase();
 
-  if (lower.match(/\b(hi|hello|hey|assalamu|salam|greetings)\b/)) {
+  const emergency = EMERGENCY_RULES.find(rule => rule.re.test(lower));
+  if (emergency) {
+    const isMentalHealthCrisis = emergency.label === 'a mental health crisis';
+    return {
+      text: `🚨 **This sounds like ${emergency.label} — please seek emergency care right now.**\n\n`
+        + (isMentalHealthCrisis
+          ? 'Please call a crisis helpline or go to the nearest emergency room immediately. You do not have to face this alone — help is available right now.'
+          : 'Call emergency services or go to the nearest hospital immediately. Do **not** wait to self-medicate or look up guidance here first — this needs in-person medical attention now.'),
+      doctors: [], medicines: []
+    };
+  }
+
+  if (GREETING_RE.test(lower)) {
     return {
       text: 'Hello! I\'m the Medica Assistant. I can help you with:\n\n'
         + '- **Symptom guidance** - Describe your symptoms\n'
-        + '- **Medicine information** - Ask about any medicine\n'
-        + '- **Doctor recommendations** - Find the right specialist\n'
-        + '- **General health tips** - Basic health advice\n\n'
+        + '- **Medicine information & prices** - Ask about any medicine\n'
+        + '- **Doctor recommendations** - Find the right specialist, with ratings and reviews\n'
+        + '- **Guidelines & investigations** - Official health guidance and test centers\n\n'
         + 'How can I help you today?' + DISCLAIMER,
-      doctors: [],
-      medicines: []
+      doctors: [], medicines: []
     };
   }
 
-  if (lower.match(/\b(thank|thanks|dhonnobad|shukria)\b/)) {
+  if (THANKS_RE.test(lower)) {
     return {
       text: 'You\'re welcome! Take care of your health. Remember, if symptoms persist or worsen, always consult a qualified doctor.' + DISCLAIMER,
-      doctors: [],
-      medicines: []
+      doctors: [], medicines: []
     };
   }
 
-  let matchedSymptom = null;
-  for (const [symptom, data] of Object.entries(symptomDatabase)) {
-    if (lower.includes(symptom)) {
-      matchedSymptom = { symptom, ...data };
-      break;
+  if (BOT_IDENTITY_RE.test(lower)) {
+    return {
+      text: 'I\'m the **Medica Assistant** — a health guidance bot for this platform. I can help you with symptom guidance, '
+        + 'medicine information and prices, doctor recommendations, and official health guidelines. What can I help you with?',
+      doctors: [], medicines: []
+    };
+  }
+
+  if (DIAGNOSIS_REQUEST_RE.test(lower)) {
+    return {
+      text: 'I can\'t tell you whether you have a specific condition — that needs an in-person exam by a doctor. '
+        + 'What I *can* do is point you to the right specialist and share general guidance for your symptoms. '
+        + 'Try describing what you\'re feeling (e.g. "I have a fever and sore throat") and I\'ll suggest next steps.' + DISCLAIMER,
+      doctors: [], medicines: []
+    };
+  }
+
+  // wantsMedicineInfo gates the ONLY path that runs a medicine-name scan —
+  // either a generic keyword ("medicine", "price", ...) or a "tell me
+  // about X" / "what is X" lookup phrase. It never fires from bare symptom
+  // wording, so a sentence like "I have chest pain" can't accidentally
+  // resolve to some unrelated brand whose name contains "pain".
+  const wantsMedicineInfo = /\b(medicine|drug|tablet|capsule|syrup|dose|dosage|side effect|price|cost)\b/.test(lower)
+    || MEDICINE_LOOKUP_PHRASE_RE.test(lower);
+  const directMedicineMatch = wantsMedicineInfo ? findMedicineMention(lower, true) : null;
+
+  // A specific specialty name ("cardiologist", "dermatologist", ...) is
+  // just as clear a medical signal as the generic word "doctor" — looked up
+  // once here and reused by the doctor-ask section below.
+  const specialtyRows = getAll('SELECT DISTINCT specialty FROM doctors');
+  const mentionedSpecialty = specialtyRows.find(s => lower.includes(s.specialty.toLowerCase()));
+
+  if (!MEDICAL_SIGNAL_RE.test(lower) && !directMedicineMatch && !mentionedSpecialty) {
+    return {
+      text: 'I\'m the Medica health assistant, so I can only help with medical questions — symptoms, medicines, doctors, '
+        + 'guidelines, and diagnostic tests. Could you rephrase your question around a health concern?',
+      doctors: [], medicines: []
+    };
+  }
+
+  const allergyTerms = user ? splitList(user.allergies) : [];
+  const chronicTerms = user ? splitList(user.chronic_diseases).flatMap(t => tokenize(t)) : [];
+
+  const sections = [];
+  let anyDoctors = [];
+  let anyMedicines = [];
+
+  // --- Direct medicine lookup (name/generic mention, or explicit ask) ---
+  if (wantsMedicineInfo || directMedicineMatch) {
+    const med = directMedicineMatch;
+    if (med) {
+      const unsafeReason = isUnsafeForUser(med, allergyTerms, chronicTerms);
+      let text = `**${med.name}** (${med.generic_name})\n\n`
+        + `**Uses:** ${med.uses}\n\n`
+        + `**Dosage:** ${med.dosage}\n\n`
+        + `**Price:** ৳${Number(med.price || 0).toFixed(2)}${med.stock > 0 ? ` (${med.stock} in stock)` : ' (out of stock)'}\n\n`
+        + `**Side Effects:** ${med.side_effects}\n\n`
+        + `**Warnings:** ${med.warnings}`;
+
+      if (unsafeReason) {
+        text = `⚠️ **Caution:** Based on your medical profile, ${med.name} ${unsafeReason}. Please check with a pharmacist or doctor before taking it.\n\n` + text;
+      } else {
+        const alternatives = getAll(
+          `SELECT id, name, generic_name, price, stock FROM medicines
+           WHERE id != ? AND category = (SELECT category FROM medicines WHERE id = ?) AND stock > 0
+           ORDER BY price ASC LIMIT 3`,
+          [med.id, med.id]
+        ).filter(alt => !isUnsafeForUser({ ...alt, warnings: '', side_effects: '' }, allergyTerms, chronicTerms));
+
+        if (alternatives.length > 0) {
+          text += '\n\n**Alternatives:**\n' + alternatives.map(formatMedicineLine).join('\n');
+        }
+      }
+
+      sections.push(text);
+      anyMedicines.push(med.name);
+    } else if (!/\b(pain|ache|hurt|fever|cough|cold|flu|sick|ill|symptom|doctor|specialist|hospital|clinic|appointment|disease|condition|diagnos|treatment|guideline|test|investigation|scan|checkup|check-up|allerg|prescri|health|blood|surgery|infection)\b/.test(lower)) {
+      // The message was *only* a medicine ask and nothing matched.
+      sections.push('I couldn\'t find that medicine in our database. Could you double-check the spelling, or try the generic name?');
     }
   }
 
-  if (matchedSymptom) {
+  // --- Symptom-driven guidance: real diseases + specialists + guidelines + investigation centers ---
+  const { diseases, specialties } = buildSpecialtiesFromSymptoms(lower);
+  const looksLikeSymptomDescription = /\b(i have|i feel|i am|my|suffering|pain|ache|fever|symptom)\b/.test(lower) || diseases.length > 0;
+
+  if (looksLikeSymptomDescription && diseases.length > 0) {
+    let text = '**Based on what you described:**\n\n';
+    diseases.slice(0, 3).forEach(d => {
+      text += `- **${d.name}** (${d.category})\n`;
+    });
+
+    // Only offer OTC suggestions if the direct-medicine-lookup block above
+    // didn't already answer a specific medicine question this turn.
+    if (anyMedicines.length === 0) {
+      const otc = findOtcSuggestions(lower, allergyTerms, chronicTerms);
+      if (otc.length > 0) {
+        text += '\n**Over-the-counter options to ask your pharmacist about:**\n' + otc.map(formatMedicineLine).join('\n') + '\n';
+        anyMedicines = otc.map(m => m.name);
+      }
+    }
+
     let doctors = [];
-    if (matchedSymptom.specialties.length > 0) {
-      const placeholders = matchedSymptom.specialties.map(() => '?').join(',');
+    if (specialties.length > 0) {
+      const placeholders = specialties.map(() => '?').join(',');
       doctors = getAll(
-        `SELECT id, name, hospital, specialty, location, contact FROM doctors WHERE specialty IN (${placeholders}) LIMIT 5`,
-        matchedSymptom.specialties
+        `SELECT d.*, COALESCE(AVG(r.rating), d.rating) as rating, COUNT(r.id) as review_count
+         FROM doctors d LEFT JOIN reviews r ON r.doctor_id = d.id
+         WHERE d.specialty IN (${placeholders})
+         GROUP BY d.id ORDER BY rating DESC, review_count DESC LIMIT 5`,
+        specialties
       );
     }
 
-    let responseText = `Based on your description about **${matchedSymptom.symptom}**:\n\n`;
-    responseText += `**Guidance:** ${matchedSymptom.advice}\n\n`;
-
-    if (matchedSymptom.medicines.length > 0) {
-      responseText += '**Over-the-counter options:**\n';
-      matchedSymptom.medicines.forEach(m => {
-        responseText += `- ${m}\n`;
-      });
-      responseText += '\n';
-    }
-
     if (doctors.length > 0) {
-      responseText += '**Recommended specialists near you:**\n';
-      doctors.forEach(d => {
-        responseText += `- **${d.name}** - ${d.specialty} at ${d.hospital}, ${d.location} (${d.contact})\n`;
-      });
+      text += '\n**Recommended specialists:**\n' + doctors.map(formatDoctorLine).join('\n');
+      anyDoctors = doctors;
     }
 
-    const diseases = getAll(
-      `SELECT id, name, category FROM diseases WHERE LOWER(name) LIKE ? OR LOWER(symptoms) LIKE ? LIMIT 3`,
-      [`%${matchedSymptom.symptom}%`, `%${matchedSymptom.symptom}%`]
+    const guidelines = getAll(
+      `SELECT title, authority, link FROM guidelines WHERE LOWER(category) IN (${diseases.map(() => 'LOWER(?)').join(',')}) LIMIT 3`,
+      diseases.map(d => d.category)
     );
-    if (diseases.length > 0) {
-      responseText += '\n**Related health articles:**\n';
-      diseases.forEach(d => {
-        responseText += `- ${d.name} (${d.category})\n`;
-      });
+    if (guidelines.length > 0) {
+      text += '\n\n**Official guidelines:**\n' + guidelines.map(g => `- ${g.title} (${g.authority})`).join('\n');
     }
 
-    const centers = getAll(
-      `SELECT id, name, location FROM investigation_centers LIMIT 3`
-    );
-    if (centers.length > 0) {
-      responseText += '\n**Nearby diagnostic centers:**\n';
-      centers.forEach(c => {
-        responseText += `- ${c.name}, ${c.location}\n`;
-      });
-    }
-
-    responseText += DISCLAIMER;
-    return { text: responseText, doctors, medicines: matchedSymptom.medicines };
-  }
-
-  if (lower.match(/\b(medicine|drug|tablet|capsule|syrup)\b/)) {
-    const words = lower.split(/\s+/);
-    const skipWords = ['medicine', 'drug', 'tablet', 'about', 'tell', 'what', 'capsule', 'syrup', 'the', 'this', 'that', 'for', 'and'];
-    for (const word of words) {
-      if (word.length > 3 && !skipWords.includes(word)) {
-        const med = getOne(
-          'SELECT * FROM medicines WHERE LOWER(name) LIKE ? OR LOWER(generic_name) LIKE ? LIMIT 1',
-          [`%${word}%`, `%${word}%`]
-        );
-        if (med) {
-          return {
-            text: `**${med.name}** (${med.generic_name})\n\n`
-              + `**Uses:** ${med.uses}\n\n`
-              + `**Dosage:** ${med.dosage}\n\n`
-              + `**Side Effects:** ${med.side_effects}\n\n`
-              + `**Warnings:** ${med.warnings}`
-              + DISCLAIMER,
-            doctors: [],
-            medicines: [med.name]
-          };
-        }
+    if (/\btest|investigation|scan|checkup|check-up\b/.test(lower)) {
+      const centers = getAll('SELECT name, location, available_tests FROM investigation_centers LIMIT 3');
+      if (centers.length > 0) {
+        text += '\n\n**Nearby diagnostic centers:**\n' + centers.map(c => `- ${c.name}, ${c.location}`).join('\n');
       }
     }
+
+    sections.push(text);
   }
 
-  return {
-    text: 'I\'m not sure I fully understand your concern. Could you please describe your symptoms more specifically? For example:\n\n'
+  // --- Pure "find me a doctor" / specialty ask, without a symptom match ---
+  const wantsDoctor = /\b(doctor|specialist|physician|hospital|clinic|appointment)\b/.test(lower) || !!mentionedSpecialty;
+  if (wantsDoctor && anyDoctors.length === 0) {
+    let doctors = [];
+    if (mentionedSpecialty) {
+      doctors = getAll(
+        `SELECT d.*, COALESCE(AVG(r.rating), d.rating) as rating, COUNT(r.id) as review_count
+         FROM doctors d LEFT JOIN reviews r ON r.doctor_id = d.id
+         WHERE d.specialty = ? GROUP BY d.id ORDER BY rating DESC LIMIT 5`,
+        [mentionedSpecialty.specialty]
+      );
+    }
+    if (doctors.length > 0) {
+      sections.push(`**${mentionedSpecialty.specialty} specialists:**\n` + doctors.map(formatDoctorLine).join('\n')
+        + '\n\nYou can book an appointment from the Doctors or Appointments page.');
+      anyDoctors = doctors;
+    } else if (sections.length === 0) {
+      sections.push('Could you tell me what kind of specialist you\'re looking for, or describe your symptoms so I can match you with the right one?');
+    }
+  }
+
+  if (sections.length === 0) {
+    sections.push('I\'m not sure I fully understand your concern. Could you describe your symptoms, or ask about a specific medicine, doctor, or test? For example:\n\n'
       + '- "I have a headache and fever"\n'
-      + '- "I need a doctor for heart problems"\n'
-      + '- "Tell me about Napa medicine"\n'
-      + '- "I have stomach pain after eating"\n'
-      + '- "My child is sick with fever"\n\n'
-      + 'I\'m here to help guide you to the right medical care.' + DISCLAIMER,
-    doctors: [],
-    medicines: []
-  };
+      + '- "I need a cardiologist"\n'
+      + '- "What\'s the price of Napa?"\n'
+      + '- "I have stomach pain, are there any investigation centers nearby?"');
+  }
+
+  return { text: sections.join('\n\n---\n\n') + DISCLAIMER, doctors: anyDoctors, medicines: anyMedicines };
 }
 
 router.post('/', authenticateToken, (req, res) => {
@@ -238,7 +407,8 @@ router.post('/', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    const response = generateResponse(message.trim());
+    const user = getOne('SELECT allergies, chronic_diseases FROM users WHERE id = ?', [req.user.id]);
+    const response = generateResponse(message.trim(), user);
 
     runQuery('INSERT INTO chat_logs (user_id, message, response) VALUES (?, ?, ?)',
       [req.user.id, message, response.text]);

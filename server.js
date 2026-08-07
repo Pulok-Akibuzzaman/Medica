@@ -41,6 +41,7 @@ async function start() {
   app.use('/api/orders', require('./routes/orders'));
   app.use('/api/reminders', require('./routes/reminders'));
   app.use('/api/appointments', require('./routes/appointments'));
+  app.use('/api/recommendations', require('./routes/recommendations'));
 
   app.use((err, req, res, next) => {
     console.error(err.stack);

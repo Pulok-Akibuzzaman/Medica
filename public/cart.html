@@ -51,10 +51,17 @@
     <div id="alert-container"></div>
 
     <div class="grid grid-2" style="align-items:start">
-      <div class="card">
-        <h3 style="margin-bottom:1rem">Cart Items</h3>
-        <div id="cart-items">
-          <p class="loading">Loading cart...</p>
+      <div>
+        <div class="card">
+          <h3 style="margin-bottom:1rem">Cart Items</h3>
+          <div id="cart-items">
+            <p class="loading">Loading cart...</p>
+          </div>
+        </div>
+
+        <div class="card hidden" id="suggestions-card" style="margin-top:1.5rem">
+          <h3 style="margin-bottom:1rem">✨ You Might Also Need</h3>
+          <div id="suggestions-grid" class="grid grid-3"></div>
         </div>
       </div>
 
@@ -220,10 +227,24 @@
       }
     });
 
+    async function loadSuggestions() {
+      try {
+        const data = await apiFetch('/api/recommendations/cart-suggestions');
+        const card = document.getElementById('suggestions-card');
+        if (!data.recommendations.length) {
+          card.classList.add('hidden');
+          return;
+        }
+        document.getElementById('suggestions-grid').innerHTML = renderRecommendationCards(data.recommendations);
+        card.classList.remove('hidden');
+      } catch (e) { /* suggestions are non-critical */ }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const user = getUser();
       if (user) document.getElementById('ship-name').value = user.name;
       loadCart();
+      loadSuggestions();
     });
   </script>
   <script src="js/language-switcher.js"></script>

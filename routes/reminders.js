@@ -26,7 +26,7 @@ router.post('/', authenticateToken, (req, res) => {
 
     runQuery(
       'INSERT INTO medicine_reminders (user_id, medicine_name, dosage, reminder_time, days_of_week, is_active) VALUES (?, ?, ?, ?, ?, 1)',
-      [req.user.id, medicine_name, dosage || '', days_of_week || 'daily', reminder_time]
+      [req.user.id, medicine_name, dosage || '', reminder_time, days_of_week || 'daily']
     );
 
     const id = getLastInsertId();
