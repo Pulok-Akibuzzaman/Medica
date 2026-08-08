@@ -589,3 +589,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+function callHelpline(number, title = 'Emergency Support') {
+  let modal = document.getElementById('helpline-dial-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'helpline-dial-modal';
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '99999';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:400px;text-align:center;padding:2rem;">
+        <div style="font-size:3rem;margin-bottom:0.5rem">📞</div>
+        <h3 id="helpline-modal-title" style="margin-bottom:0.5rem;color:var(--primary)">Call Emergency Support</h3>
+        <p style="font-size:1.25rem;font-weight:700;margin-bottom:1rem;color:var(--text)" id="helpline-modal-number">16263</p>
+        <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:1.5rem">Would you like to open your phone dialer app to make this call?</p>
+        <div style="display:flex;gap:0.75rem;justify-content:center">
+          <a id="helpline-dial-btn" href="#" class="btn btn-primary" style="flex:1;text-decoration:none">📞 Open Dialer</a>
+          <button class="btn btn-secondary" onclick="document.getElementById('helpline-dial-modal').classList.add('hidden')" style="flex:1">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('helpline-modal-title').textContent = title;
+  document.getElementById('helpline-modal-number').textContent = `📞 ${number}`;
+  const dialBtn = document.getElementById('helpline-dial-btn');
+  dialBtn.href = `tel:${number}`;
+  dialBtn.onclick = () => {
+    modal.classList.add('hidden');
+  };
+
+  modal.classList.remove('hidden');
+}
