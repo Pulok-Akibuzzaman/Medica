@@ -75,6 +75,26 @@
       font-size: 1rem;
     }
 
+    .form-group select option {
+      background-color: var(--bg-card, #1e293b);
+      color: var(--text, #ffffff);
+    }
+
+    [data-theme="dark"] .form-group select option {
+      background-color: #1e293b;
+      color: #ffffff;
+    }
+
+    [data-theme="light"] .form-group select option {
+      background-color: #ffffff;
+      color: #1e293b;
+    }
+
+    [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+    [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.2);
+    }
+
     .form-group input:focus,
     .form-group select:focus {
       outline: none;

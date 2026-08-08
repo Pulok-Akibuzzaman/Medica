@@ -494,6 +494,32 @@ input, select, textarea {
   font-family: inherit;
 }
 
+select option {
+  background-color: var(--bg-card, #ffffff);
+  color: var(--text, #1e293b);
+}
+
+[data-theme="dark"] select option {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+[data-theme="light"] select option {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+/* Fix date & time picker clock/calendar icon visibility in dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
