@@ -79,7 +79,7 @@
       <div class="card">
         <h3 style="margin-bottom:1rem">Quick Actions</h3>
         <div style="display:flex;flex-direction:column;gap:0.75rem">
-          <a href="appointments.html" class="btn btn-primary">📅 Book Doctor Appointment</a>
+          <a href="take-appointment.html" class="btn btn-primary">📅 Take Doctor Appointment</a>
           <a href="reminders.html" class="btn btn-primary">⏰ Medicine Reminders</a>
           <a href="medicines.html" class="btn btn-secondary">💊 Browse & Buy Medicines</a>
           <a href="cart.html" class="btn btn-secondary">🛒 My Cart</a>
@@ -107,6 +107,18 @@
       <div id="order-alert-container"></div>
       <div id="orders-list">
         <p class="loading">Loading...</p>
+      </div>
+    </div>
+
+    <!-- My Appointments Section -->
+    <div class="card" style="margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <h3 style="margin:0">📋 My Appointments</h3>
+        <a href="take-appointment.html" class="btn btn-sm btn-primary">➕ Take Appointment</a>
+      </div>
+      <div id="appointment-alert-container"></div>
+      <div id="appointments-list">
+        <p class="loading">Loading appointments...</p>
       </div>
     </div>
 
@@ -271,6 +283,7 @@
 
       loadOrders();
       loadRecommendations();
+      loadAppointments();
     });
 
     async function loadRecommendations() {
@@ -486,6 +499,135 @@
         });
       }
     });
+
+    // Appointment Management Logic
+    async function loadAppointments() {
+      try {
+        const data = await apiFetch('/api/appointments');
+        displayAppointments(data.appointments);
+      } catch (err) {
+        showAlert(document.getElementById('appointment-alert-container'), 'Failed to load appointments: ' + err.message, 'error');
+      }
+    }
+
+    function displayAppointments(appointments) {
+      const container = document.getElementById('appointments-list');
+      if (!appointments || appointments.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 1.5rem;">No appointments booked yet</p>';
+        return;
+      }
+
+      container.innerHTML = appointments.map(apt => `
+        <div class="appointment-card">
+          <div class="appointment-header">
+            <div>
+              <h3>${apt.doctor_name}</h3>
+              <p class="doctor-sub"><strong>${apt.specialty}</strong> • 📍 ${apt.hospital}</p>
+            </div>
+            <div class="appointment-header-right">
+              <span class="status-badge ${apt.status}">${apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}</span>
+              <span class="ref-tag">Ref: #${apt.id}</span>
+              ${apt.status === 'scheduled' || apt.status === 'confirmed' ? `
+                <button class="btn btn-sm btn-secondary" onclick="showRescheduleModal(${apt.id}, '${apt.appointment_date}', '${apt.appointment_time}')">📅 Reschedule</button>
+                <button class="btn btn-sm btn-danger" onclick="showCancelAppointmentModal(${apt.id})">❌ Cancel</button>
+              ` : apt.status === 'cancelled' ? `
+                <a href="take-appointment.html" class="btn btn-sm btn-secondary">➕ New Appointment</a>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="appointment-grid">
+            <div class="appointment-grid-item">
+              <span class="info-label">📅 Date</span>
+              <span class="info-val">${new Date(apt.appointment_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+            </div>
+            <div class="appointment-grid-item">
+              <span class="info-label">🕐 Time</span>
+              <span class="info-val">${apt.appointment_time}</span>
+            </div>
+            <div class="appointment-grid-item">
+              <span class="info-label">💰 Fee</span>
+              <span class="info-val primary">৳${apt.consultation_fee || '500'}</span>
+            </div>
+            <div class="appointment-grid-item">
+              <span class="info-label">☎️ Contact</span>
+              <span class="info-val">${apt.contact}</span>
+            </div>
+          </div>
+
+          ${apt.reason ? `<div class="reason-banner"><strong>Reason:</strong> ${apt.reason}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    let cancelAppointmentId = null;
+
+    function showCancelAppointmentModal(id) {
+      cancelAppointmentId = id;
+      document.getElementById('cancel-appointment-modal').classList.remove('hidden');
+      document.getElementById('cancel-appointment-reason').value = '';
+    }
+
+    function closeCancelAppointmentModal() {
+      document.getElementById('cancel-appointment-modal').classList.add('hidden');
+      cancelAppointmentId = null;
+    }
+
+    async function submitCancelAppointment() {
+      const reason = document.getElementById('cancel-appointment-reason').value.trim();
+      if (!reason) {
+        alert('Please provide a reason for cancellation');
+        return;
+      }
+
+      try {
+        await apiFetch(`/api/appointments/${cancelAppointmentId}/cancel`, {
+          method: 'PUT',
+          body: JSON.stringify({ cancellation_reason: reason })
+        });
+        showAlert(document.getElementById('appointment-alert-container'), '✅ Appointment cancelled successfully', 'success');
+        closeCancelAppointmentModal();
+        loadAppointments();
+      } catch (err) {
+        showAlert(document.getElementById('appointment-alert-container'), 'Cancellation failed: ' + err.message, 'error');
+      }
+    }
+
+    let rescheduleAppointmentId = null;
+
+    function showRescheduleModal(id, currentDate, currentTime) {
+      rescheduleAppointmentId = id;
+      document.getElementById('reschedule-current').textContent = `${new Date(currentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${currentTime}`;
+      document.getElementById('reschedule-date').value = currentDate;
+      document.getElementById('reschedule-modal').classList.remove('hidden');
+    }
+
+    function closeRescheduleModal() {
+      document.getElementById('reschedule-modal').classList.add('hidden');
+      rescheduleAppointmentId = null;
+    }
+
+    async function submitReschedule() {
+      const newDate = document.getElementById('reschedule-date').value;
+      const newTime = document.getElementById('reschedule-time').value;
+
+      if (!newDate || !newTime) {
+        alert('Please select both date and time');
+        return;
+      }
+
+      try {
+        await apiFetch(`/api/appointments/${rescheduleAppointmentId}/reschedule`, {
+          method: 'PUT',
+          body: JSON.stringify({ appointment_date: newDate, appointment_time: newTime })
+        });
+        showAlert(document.getElementById('appointment-alert-container'), '✅ Appointment rescheduled successfully!', 'success');
+        closeRescheduleModal();
+        loadAppointments();
+      } catch (err) {
+        alert('Reschedule failed: ' + err.message);
+      }
+    }
   </script>
 
   <!-- Cancel Order Modal -->
@@ -517,7 +659,181 @@
     </div>
   </div>
 
+  <!-- Reschedule Appointment Modal -->
+  <div class="modal-overlay hidden" id="reschedule-modal">
+    <div class="modal" style="max-width: 500px;">
+      <h2>Reschedule Appointment</h2>
+      <p style="color: var(--text-light); margin-bottom: 1.5rem;">Current: <strong id="reschedule-current"></strong></p>
+
+      <div style="background: var(--primary-light); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
+        <p style="margin: 0; font-size: 0.9rem;"><strong>⚠️ Note:</strong> Please select a new available date and time. The slot must be available on the selected date.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="reschedule-date">New Date *</label>
+        <input type="date" id="reschedule-date" required>
+      </div>
+
+      <div class="form-group">
+        <label for="reschedule-time">New Time Slot *</label>
+        <div id="reschedule-slots" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.75rem;">
+          <p style="color: var(--text-light);">Select date first</p>
+        </div>
+        <input type="hidden" id="reschedule-time">
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="submitReschedule()">Reschedule</button>
+        <button class="btn btn-secondary" style="flex: 1;" onclick="closeRescheduleModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Appointment Modal -->
+  <div class="modal-overlay hidden" id="cancel-appointment-modal">
+    <div class="modal" style="max-width: 500px;">
+      <h2>Cancel Appointment</h2>
+      <p style="color: var(--text-light); margin-bottom: 1.5rem;">Please tell us why you want to cancel this appointment. This helps us improve our service.</p>
+
+      <div style="background: #fee2e2; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; border-left: 4px solid #dc2626;">
+        <p style="margin: 0; font-size: 0.9rem; color: #991b1b;"><strong>⚠️ Warning:</strong> This action cannot be undone. The appointment slot will be released for other patients.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="cancel-appointment-reason">Reason for Cancellation *</label>
+        <textarea id="cancel-appointment-reason" placeholder="e.g., Unable to make it that day, Found another doctor, Personal reasons, Emergency came up, etc." rows="4" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button class="btn btn-danger" style="flex: 1;" onclick="submitCancelAppointment()">Cancel Appointment</button>
+        <button class="btn btn-secondary" style="flex: 1;" onclick="closeCancelAppointmentModal()">Keep Appointment</button>
+      </div>
+    </div>
+  </div>
+
   <style>
+    .appointment-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    .appointment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .appointment-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    .appointment-header .doctor-sub {
+      margin: 0.15rem 0 0 0;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .appointment-header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .appointment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .appointment-grid-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .appointment-grid-item .info-label {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.15rem;
+    }
+
+    .appointment-grid-item .info-val {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .appointment-grid-item .info-val.primary {
+      color: var(--primary);
+    }
+
+    .reason-banner {
+      margin-top: 0.75rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--primary-light);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .ref-tag {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-right: 0.25rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-badge.scheduled {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-badge.cancelled {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .time-slot {
+      padding: 0.75rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+
+    .time-slot:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .time-slot.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
     .modal-overlay {
       display: none;
       position: fixed;
@@ -558,6 +874,35 @@
       margin-bottom: 0.5rem;
     }
   </style>
+
+  <script>
+    document.getElementById('reschedule-date').min = new Date().toISOString().split('T')[0];
+
+    document.getElementById('reschedule-date').addEventListener('change', async (e) => {
+      const date = e.target.value;
+      if (!date || !rescheduleAppointmentId) return;
+
+      try {
+        const appointments = await apiFetch('/api/appointments');
+        const apt = appointments.appointments.find(a => a.id === rescheduleAppointmentId);
+        if (!apt) return;
+
+        const slots = await apiFetch(`/api/appointments/slots/${apt.doctor_id}/${date}`);
+        const slotsContainer = document.getElementById('reschedule-slots');
+        slotsContainer.innerHTML = slots.slots.map(slot => `
+          <button type="button" class="time-slot" onclick="selectRescheduleTime(this, '${slot}')">${slot}</button>
+        `).join('');
+      } catch (err) {
+        alert('Failed to load time slots: ' + err.message);
+      }
+    });
+
+    function selectRescheduleTime(element, time) {
+      document.querySelectorAll('#reschedule-slots .time-slot').forEach(el => el.classList.remove('selected'));
+      element.classList.add('selected');
+      document.getElementById('reschedule-time').value = time;
+    }
+  </script>
 
   <script src="js/language-switcher.js"></script>
 </body>

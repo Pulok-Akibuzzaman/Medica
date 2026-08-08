@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Take Appointment - Medica</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <style>
+    .appointments-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .appointment-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-top: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    .time-slots {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .time-slot {
+      padding: 0.75rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+
+    .time-slot:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .time-slot.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .doctor-selected-card {
+      background: var(--primary-light);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .doctor-selected-card h3 {
+      margin: 0 0 0.25rem 0;
+      color: var(--text);
+    }
+
+    .doctor-selected-card p {
+      margin: 0.2rem 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-light);
+    }
+
+    .doctor-search-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .doctor-card-small {
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+
+    .doctor-card-small:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .doctor-card-small.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .doctor-card-small h4 {
+      margin: 0 0 0.5rem 0;
+      color: var(--text);
+    }
+
+    .doctor-card-small p {
+      margin: 0.25rem 0;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">More &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="diseases.html">Diseases</a>
+            <a href="guidelines.html">Guidelines</a>
+            <a href="investigations.html">Investigations</a>
+          </div>
+        </li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li><a href="reminders.html">Reminders</a></li>
+        <li><a href="appointments.html" class="active">Appointments</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" class="hidden" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="appointments-container">
+    <a href="appointments.html" class="back-link">← Back to Appointments</a>
+
+    <h1>📝 Take Doctor Appointment</h1>
+    <p class="page-subtitle">Fill up the form below to confirm your appointment reservation</p>
+
+    <div id="alert-container"></div>
+
+    <div class="appointment-form">
+      <!-- Doctor Selection Header / Banner -->
+      <div id="doctor-banner">
+        <div id="doctor-picker-section">
+          <h2>Select a Doctor</h2>
+          <div class="form-group" style="margin-bottom: 1rem; margin-top: 0.75rem;">
+            <label>Search Doctors</label>
+            <input type="text" id="doctor-search" placeholder="Search by doctor name or specialty...">
+          </div>
+          <div id="doctors-list" class="doctor-search-list">
+            <p class="loading">Loading doctors...</p>
+          </div>
+        </div>
+
+        <div id="selected-doctor-card" class="doctor-selected-card" style="display: none;">
+          <div>
+            <h3 id="sel-doc-name"></h3>
+            <p><strong>Specialty:</strong> <span id="sel-doc-specialty"></span></p>
+            <p><strong>Hospital:</strong> <span id="sel-doc-hospital"></span> | 📍 <span id="sel-doc-location"></span></p>
+            <p><strong>Contact:</strong> ☎️ <span id="sel-doc-contact"></span></p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="changeDoctor()">Change Doctor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Section: Appointment Details -->
+      <h2 style="margin-top: 1.5rem; margin-bottom: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">Appointment Details</h2>
+      <form id="appointment-booking-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="appointment-date">Appointment Date *</label>
+            <input type="date" id="appointment-date" required>
+          </div>
+          <div class="form-group">
+            <label>Appointment Time *</label>
+            <div id="time-slots-container">
+              <p class="loading" style="padding: 0.5rem 0;">Select date first</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="appointment-reason">Reason for Appointment (Optional)</label>
+          <textarea id="appointment-reason" placeholder="e.g., Regular checkup, Consultation for headaches, etc." rows="3"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary">Book Appointment</button>
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!isLoggedIn()) window.location.href = '/login.html';
+
+    let selectedDoctorId = null;
+    let doctors = [];
+    const urlParams = new URLSearchParams(window.location.search);
+    const preSelectedDocId = urlParams.get('doctorId');
+
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('appointment-date');
+    dateInput.min = today;
+    dateInput.value = today;
+
+    async function init() {
+      await loadDoctors();
+      if (preSelectedDocId) {
+        const found = doctors.find(d => d.id == preSelectedDocId);
+        if (found) {
+          selectDoctor(found);
+        } else {
+          try {
+            const data = await apiFetch(`/api/doctors/${preSelectedDocId}`);
+            if (data.doctor) selectDoctor(data.doctor);
+          } catch (e) {
+            console.error('Failed to load preselected doctor:', e);
+          }
+        }
+      }
+    }
+
+    async function loadDoctors() {
+      try {
+        const data = await apiFetch('/api/doctors?limit=100');
+        doctors = data.doctors || [];
+        displayDoctors(doctors);
+      } catch (err) {
+        showAlert(document.getElementById('alert-container'), 'Failed to load doctors: ' + err.message, 'error');
+      }
+    }
+
+    function displayDoctors(doctorsList) {
+      const container = document.getElementById('doctors-list');
+      if (doctorsList.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-light);">No doctors found</p>';
+        return;
+      }
+
+      container.innerHTML = doctorsList.map(doctor => `
+        <div class="doctor-card-small ${selectedDoctorId == doctor.id ? 'selected' : ''}" onclick="selectDoctorById(${doctor.id})">
+          <h4>${doctor.name}</h4>
+          <p><strong>${doctor.specialty}</strong></p>
+          <p>${doctor.hospital}</p>
+          <p>📍 ${doctor.location}</p>
+        </div>
+      `).join('');
+    }
+
+    function selectDoctorById(id) {
+      const doc = doctors.find(d => d.id == id);
+      if (doc) selectDoctor(doc);
+    }
+
+    function selectDoctor(doctor) {
+      selectedDoctorId = doctor.id;
+      document.getElementById('sel-doc-name').textContent = doctor.name;
+      document.getElementById('sel-doc-specialty').textContent = doctor.specialty;
+      document.getElementById('sel-doc-hospital').textContent = doctor.hospital;
+      document.getElementById('sel-doc-location').textContent = doctor.location;
+      document.getElementById('sel-doc-contact').textContent = doctor.contact || 'N/A';
+
+      document.getElementById('doctor-picker-section').style.display = 'none';
+      document.getElementById('selected-doctor-card').style.display = 'flex';
+
+      if (dateInput.value) {
+        loadTimeSlots(dateInput.value);
+      }
+    }
+
+    function changeDoctor() {
+      selectedDoctorId = null;
+      document.getElementById('selected-doctor-card').style.display = 'none';
+      document.getElementById('doctor-picker-section').style.display = 'block';
+      document.getElementById('time-slots-container').innerHTML = '<p class="loading" style="padding:0.5rem 0;">Select a doctor first</p>';
+    }
+
+    async function loadTimeSlots(date) {
+      if (!selectedDoctorId) {
+        document.getElementById('time-slots-container').innerHTML = '<p class="loading" style="padding: 0.5rem 0;">Please select a doctor first</p>';
+        return;
+      }
+
+      try {
+        const data = await apiFetch(`/api/appointments/slots/${selectedDoctorId}/${date}`);
+        displayTimeSlots(data.slots);
+      } catch (err) {
+        console.error('Error loading slots:', err);
+        document.getElementById('time-slots-container').innerHTML = '<p class="loading" style="padding: 0.5rem 0;">No slots available</p>';
+      }
+    }
+
+    function displayTimeSlots(slots) {
+      const container = document.getElementById('time-slots-container');
+      if (!slots || slots.length === 0) {
+        container.innerHTML = '<p class="loading" style="padding: 0.5rem 0; grid-column: 1/-1;">No available slots for this date</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="time-slots">
+          ${slots.map(slot => `
+            <div class="time-slot" onclick="selectTimeSlot(this, '${slot}')">${slot}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function selectTimeSlot(element, time) {
+      document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+      element.classList.add('selected');
+      document.getElementById('appointment-booking-form').dataset.selectedTime = time;
+    }
+
+    dateInput.addEventListener('change', (e) => {
+      if (e.target.value < today) {
+        showAlert(document.getElementById('alert-container'), 'Cannot book appointments in the past', 'error');
+        e.target.value = today;
+        return;
+      }
+      if (selectedDoctorId) {
+        loadTimeSlots(e.target.value);
+      }
+    });
+
+    document.getElementById('doctor-search').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = doctors.filter(d =>
+        d.name.toLowerCase().includes(query) ||
+        d.specialty.toLowerCase().includes(query)
+      );
+      displayDoctors(filtered);
+    });
+
+    function resetForm() {
+      document.getElementById('appointment-booking-form').reset();
+      dateInput.value = today;
+      document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+      delete document.getElementById('appointment-booking-form').dataset.selectedTime;
+    }
+
+    document.getElementById('appointment-booking-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedDoctorId) {
+        showAlert(document.getElementById('alert-container'), 'Please select a doctor first', 'error');
+        return;
+      }
+
+      const selectedTime = document.getElementById('appointment-booking-form').dataset.selectedTime;
+      if (!selectedTime) {
+        showAlert(document.getElementById('alert-container'), 'Please select a time slot', 'error');
+        return;
+      }
+
+      const date = dateInput.value;
+      const reason = document.getElementById('appointment-reason').value;
+
+      try {
+        await apiFetch('/api/appointments', {
+          method: 'POST',
+          body: JSON.stringify({
+            doctor_id: selectedDoctorId,
+            appointment_date: date,
+            appointment_time: selectedTime,
+            reason: reason
+          })
+        });
+
+        showAlert(document.getElementById('alert-container'), '✅ Appointment booked successfully! Redirecting to Dashboard...', 'success');
+        
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1200);
+      } catch (err) {
+        showAlert(document.getElementById('alert-container'), 'Booking failed: ' + err.message, 'error');
+      }
+    });
+
+    init();
+  </script>
+  <script src="js/language-switcher.js"></script>
+</body>
+</html>

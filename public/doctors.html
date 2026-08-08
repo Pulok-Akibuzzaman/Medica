@@ -229,7 +229,7 @@
               </div>
             </div>
             <div class="doctor-actions">
-              <button class="btn btn-sm btn-primary" onclick="openBookModal(${d.id}, '${d.name.replace(/'/g, "\\'")}')">📅 Book</button>
+              <button class="btn btn-sm btn-primary" onclick="openBookModal(${d.id})">📅 Take Appointment</button>
               <button class="btn btn-sm btn-secondary" onclick="showDoctor(${d.id})">${i18n.t('common_view_details')}</button>
               ${isLoggedIn() ? `
                 <button class="fav-btn" id="fav-${d.id}" onclick="toggleFavorite(${d.id})" title="Add to favorites">♡</button>
@@ -268,26 +268,13 @@
       if (e.key === 'Enter') searchDoctors();
     });
 
-    let currentBookingDoctorId = null;
-    let selectedBookingSlot = null;
-
-    function openBookModal(doctorId, doctorName) {
+    function openBookModal(doctorId) {
       if (!isLoggedIn()) {
         showToast('Please log in to book an appointment.', 'info');
         window.location.href = '/login.html';
         return;
       }
-      currentBookingDoctorId = doctorId;
-      selectedBookingSlot = null;
-      document.getElementById('book-doctor-name').textContent = `Doctor: ${doctorName}`;
-      
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dateStr = tomorrow.toISOString().split('T')[0];
-      document.getElementById('book-date').value = dateStr;
-      document.getElementById('book-reason').value = '';
-      document.getElementById('book-modal').classList.remove('hidden');
-      loadAvailableSlots();
+      window.location.href = `take-appointment.html?doctorId=${doctorId}`;
     }
 
     function closeBookModal() {
@@ -406,7 +393,8 @@
           ` : '<p style="color:var(--text-light);margin-top:1rem">No reviews yet.</p>'}
           <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeDoctorModal()">${i18n.t('common_close')}</button>
-            ${isLoggedIn() ? `<button class="btn btn-primary" onclick="closeDoctorModal();openReviewModal(${d.id})">${i18n.t('doctor_write_review')}</button>` : ''}
+            <button class="btn btn-primary" onclick="window.location.href='take-appointment.html?doctorId=${d.id}'">📅 Take Appointment</button>
+            ${isLoggedIn() ? `<button class="btn btn-secondary" onclick="closeDoctorModal();openReviewModal(${d.id})">${i18n.t('doctor_write_review')}</button>` : ''}
           </div>
         `;
         document.getElementById('doctor-modal').classList.remove('hidden');

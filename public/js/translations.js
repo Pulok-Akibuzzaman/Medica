@@ -98,6 +98,7 @@ const translations = {
     doctor_rate: 'Rate',
     doctor_submit_review: 'Submit Review',
     doctor_reviews: 'Reviews',
+    take_appointment: 'Take Appointment',
 
     // Diseases Page
     diseases_title: 'Disease Knowledge Base',
@@ -406,6 +407,7 @@ const translations = {
     doctor_rate: 'রেট করুন',
     doctor_submit_review: 'পর্যালোচনা জমা দিন',
     doctor_reviews: 'পর্যালোচনা',
+    take_appointment: 'অ্যাপয়েন্টমেন্ট নিন',
 
     // Diseases Page
     diseases_title: 'রোগের জ্ঞান ভাণ্ডার',
