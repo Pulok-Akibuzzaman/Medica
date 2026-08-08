@@ -16,6 +16,9 @@ const translations = {
     nav_register: 'Register',
     nav_logout: 'Logout',
     nav_dashboard: 'Dashboard',
+    nav_about: 'About Us',
+    nav_faq: 'FAQ',
+    nav_sitemap: 'Sitemap',
 
     // Home Page
     hero_title: 'Your Health, Our Priority',
@@ -325,6 +328,9 @@ const translations = {
     nav_register: 'রেজিস্টার',
     nav_logout: 'লগআউট',
     nav_dashboard: 'ড্যাশবোর্ড',
+    nav_about: 'আমাদের সম্পর্কে',
+    nav_faq: 'প্রায়শই জিজ্ঞাসিত প্রশ্ন (FAQ)',
+    nav_sitemap: 'সাইটম্যাপ',
 
     // Home Page
     hero_title: 'আপনার স্বাস্থ্য, আমাদের দায়িত্ব',

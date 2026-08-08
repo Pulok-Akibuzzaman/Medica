@@ -557,6 +557,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Setup nav dropdown toggle and click-outside / mouseleave handler
+  document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('a');
+    if (trigger) {
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isOpen = dropdown.classList.contains('open');
+        document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+        if (!isOpen) dropdown.classList.add('open');
+      });
+    }
+
+    dropdown.addEventListener('mouseleave', () => {
+      dropdown.classList.remove('open');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-dropdown')) {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    }
+  });
+
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-links a').forEach(link => {
     const href = link.getAttribute('href');
