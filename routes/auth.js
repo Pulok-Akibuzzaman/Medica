@@ -7,7 +7,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.post('/register', (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'All fields are required.' });
@@ -22,17 +22,19 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'Invalid email format.' });
     }
 
+    const assignedRole = (role === 'delivery_man') ? 'delivery_man' : 'user';
+
     const existing = getOne('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    runQuery('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name, email, hash]);
+    runQuery('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [name, email, hash, assignedRole]);
     const id = getLastInsertId();
 
     const token = jwt.sign(
-      { id, name, email, role: 'user' },
+      { id, name, email, role: assignedRole },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -40,7 +42,7 @@ router.post('/register', (req, res) => {
     res.status(201).json({
       message: 'Registration successful!',
       token,
-      user: { id, name, email, role: 'user' }
+      user: { id, name, email, role: assignedRole }
     });
   } catch (err) {
     console.error(err);

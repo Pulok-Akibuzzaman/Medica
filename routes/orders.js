@@ -63,7 +63,14 @@ router.post('/', authenticateToken, (req, res) => {
 // Current user's order history
 router.get('/', authenticateToken, (req, res) => {
   try {
-    const orders = getAll('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    const query = `
+      SELECT o.*, d.name AS delivery_person_name, d.email AS delivery_person_email
+      FROM orders o
+      LEFT JOIN users d ON d.id = o.delivery_person_id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC
+    `;
+    const orders = getAll(query, [req.user.id]);
     orders.forEach(o => {
       o.items = getAll('SELECT medicine_id, medicine_name, price, quantity FROM order_items WHERE order_id = ?', [o.id]);
     });
@@ -107,12 +114,25 @@ router.put('/:id/cancel', authenticateToken, (req, res) => {
   }
 });
 
-// All orders for admin (shipping management)
+// Get all users registered as delivery personnel for admin selection
+router.get('/admin/delivery-personnel', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const deliveryPersonnel = getAll("SELECT id, name, email FROM users WHERE role = 'delivery_man' ORDER BY name ASC");
+    res.json({ deliveryPersonnel });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch delivery personnel.' });
+  }
+});
+
+// All orders for admin (shipping & delivery management)
 router.get('/admin/all', authenticateToken, requireAdmin, (req, res) => {
   try {
     const { status } = req.query;
-    let query = `SELECT o.*, u.name AS user_name, u.email AS user_email
-                 FROM orders o JOIN users u ON u.id = o.user_id`;
+    let query = `SELECT o.*, u.name AS user_name, u.email AS user_email, d.name AS delivery_person_name, d.email AS delivery_person_email
+                 FROM orders o 
+                 JOIN users u ON u.id = o.user_id
+                 LEFT JOIN users d ON d.id = o.delivery_person_id`;
     const params = [];
     if (status && status !== 'all') {
       query += ' WHERE o.status = ?';
@@ -128,6 +148,44 @@ router.get('/admin/all', authenticateToken, requireAdmin, (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch orders.' });
+  }
+});
+
+// Admin assigns delivery person to an order
+router.put('/:id/assign', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const { delivery_person_id } = req.body;
+
+    const order = getOne('SELECT * FROM orders WHERE id = ?', [orderId]);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    let assignedId = null;
+    let assignedName = 'Unassigned';
+
+    if (delivery_person_id) {
+      const deliveryPerson = getOne("SELECT id, name FROM users WHERE id = ? AND role = 'delivery_man'", [parseInt(delivery_person_id)]);
+      if (!deliveryPerson) {
+        return res.status(400).json({ error: 'Selected user is not a valid delivery person.' });
+      }
+      assignedId = deliveryPerson.id;
+      assignedName = deliveryPerson.name;
+    }
+
+    const now = new Date().toISOString();
+    runQuery('UPDATE orders SET delivery_person_id = ?, updated_at = ? WHERE id = ?', [assignedId, now, orderId]);
+    saveDb();
+
+    res.json({
+      message: `Order #${orderId} assigned to ${assignedName}.`,
+      delivery_person_id: assignedId,
+      delivery_person_name: assignedName
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to assign delivery person.' });
   }
 });
 

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Portal - Medica</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo"><span>🏥</span> Medica</a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="medicines.html">Medicines</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li class="nav-dropdown"><a onclick="this.parentElement.classList.toggle('open')">More &#9662;</a>
+          <div class="nav-dropdown-menu">
+            <a href="diseases.html">Diseases</a>
+            <a href="guidelines.html">Guidelines</a>
+            <a href="investigations.html">Investigations</a>
+            <a href="about.html">About Us</a>
+            <a href="faq.html">FAQ</a>
+            <a href="sitemap.html">Sitemap</a>
+          </div>
+        </li>
+        <li><a href="chatbot.html">AI Assistant</a></li>
+        <li><a href="reminders.html">Reminders</a></li>
+        <li><a href="appointments.html">Appointments</a></li>
+        <li id="delivery-link"><a href="delivery.html" class="active">🚚 Delivery Portal</a></li>
+        <li id="admin-link" class="hidden"><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div id="auth-links" class="hidden">
+          <a href="login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        </div>
+        <div id="user-links" style="display:flex;align-items:center;gap:0.75rem;">
+          <a href="dashboard.html" class="btn btn-secondary btn-sm"><span id="user-name"></span></a>
+          <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard-header" style="margin-bottom:1.5rem">
+      <div>
+        <h1 class="page-title">🚚 Delivery Personnel Portal</h1>
+        <p class="page-subtitle">Track, update, and fulfill medicine orders assigned to you</p>
+      </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="delivery-alert-container"></div>
+
+    <!-- Stat Cards -->
+    <div class="stat-cards" style="margin-bottom:1.5rem">
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-total-assigned">-</div>
+        <div class="stat-label">Total Assigned</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-active-deliveries" style="color:var(--primary)">-</div>
+        <div class="stat-label">Active Deliveries</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-available-orders" style="color:var(--accent,#f59e0b)">-</div>
+        <div class="stat-label">Available To Claim</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-delivered-today" style="color:var(--success,#2e7d32)">-</div>
+        <div class="stat-label">Delivered Today</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-number" id="stat-total-delivered">-</div>
+        <div class="stat-label">Total Completed</div>
+      </div>
+    </div>
+
+    <!-- Available Orders Banner Container -->
+    <div id="available-banner-container"></div>
+
+    <!-- Tabs & Filter Section -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+        <div class="admin-tabs" style="margin:0">
+          <button class="admin-tab active" id="tab-active" onclick="switchDeliveryFilter('active')">📦 Active Deliveries</button>
+          <button class="admin-tab" id="tab-available" onclick="switchDeliveryFilter('available')">✨ Available Orders <span id="available-tab-badge"></span></button>
+          <button class="admin-tab" id="tab-completed" onclick="switchDeliveryFilter('completed')">✅ Completed Deliveries</button>
+          <button class="admin-tab" id="tab-all" onclick="switchDeliveryFilter('all')">📋 All Assigned</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadDeliveryData()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Assigned Orders List -->
+    <div id="assigned-orders-container">
+      <div class="card" style="text-align:center;padding:2rem">
+        <p class="loading">Loading assigned deliveries...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentFilter = 'active';
+    let initialLoad = true;
+
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html';
+    }
+
+    async function loadDeliveryStats() {
+      try {
+        const stats = await apiFetch('/api/delivery/stats');
+        document.getElementById('stat-total-assigned').textContent = stats.totalAssigned;
+        document.getElementById('stat-active-deliveries').textContent = stats.activeDeliveries;
+        document.getElementById('stat-delivered-today').textContent = stats.deliveredToday;
+        document.getElementById('stat-total-delivered').textContent = stats.totalDelivered;
+        document.getElementById('stat-available-orders').textContent = stats.availableOrders;
+
+        const availableBadge = document.getElementById('available-tab-badge');
+        if (availableBadge) {
+          availableBadge.textContent = stats.availableOrders > 0 ? `(${stats.availableOrders})` : '';
+        }
+
+        const banner = document.getElementById('available-banner-container');
+        if (banner) {
+          if (stats.availableOrders > 0) {
+            banner.innerHTML = `
+              <div style="background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(13,148,136,0.15));border:1px solid var(--accent,#f59e0b);padding:1rem 1.25rem;border-radius:12px;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+                <div>
+                  <strong style="color:var(--text);font-size:1.05rem">✨ ${stats.availableOrders} New Customer Order(s) Available!</strong>
+                  <div style="color:var(--text-light);font-size:0.9rem">These orders are unassigned and waiting for pickup. You can accept and deliver them.</div>
+                </div>
+                <button class="btn btn-primary" onclick="switchDeliveryFilter('available')">🙋‍♂️ View Available Orders</button>
+              </div>
+            `;
+          } else {
+            banner.innerHTML = '';
+          }
+        }
+
+        if (initialLoad) {
+          initialLoad = false;
+          if (stats.activeDeliveries === 0 && stats.availableOrders > 0) {
+            switchDeliveryFilter('available');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    async function loadAssignedOrders() {
+      const container = document.getElementById('assigned-orders-container');
+      try {
+        const data = await apiFetch(`/api/delivery/orders?filter=${currentFilter}`);
+        const orders = data.orders || [];
+
+        if (orders.length === 0) {
+          container.innerHTML = `
+            <div class="card" style="text-align:center;padding:3rem">
+              <div style="font-size:3rem;margin-bottom:1rem">📦</div>
+              <h3>No ${currentFilter === 'all' ? '' : currentFilter} deliveries found</h3>
+              <p style="color:var(--text-light)">Orders assigned to you will appear here automatically.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = orders.map(o => renderDeliveryCard(o)).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="alert alert-error">Failed to load assigned deliveries: ${err.message}</div>`;
+      }
+    }
+
+    function getDeliveryBadgeClass(status) {
+      switch (status) {
+        case 'delivered': return 'badge-success';
+        case 'out_for_delivery': return 'badge-primary';
+        case 'shipped': return 'badge-info';
+        case 'processing': return 'badge-warning';
+        case 'cancelled': return 'badge-danger';
+        default: return 'badge-secondary';
+      }
+    }
+
+    function formatDeliveryStatusName(status) {
+      switch (status) {
+        case 'out_for_delivery': return 'Out For Delivery';
+        default: return status.charAt(0).toUpperCase() + status.slice(1);
+      }
+    }
+
+    function renderDeliveryCard(o) {
+      const statusClass = getDeliveryBadgeClass(o.delivery_status || o.status);
+      const isCompleted = o.delivery_status === 'delivered' || o.delivery_status === 'cancelled';
+
+      return `
+        <div class="card" style="margin-bottom:1.5rem;border-left:4px solid var(${isCompleted ? '--success' : '--primary'});">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem">
+            <div>
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <h3 style="margin:0">Order #${o.id}</h3>
+                <span class="badge ${statusClass}">${formatDeliveryStatusName(o.delivery_status || o.status)}</span>
+              </div>
+              <small style="color:var(--text-light)">Tracking: <strong>${o.tracking_number || 'N/A'}</strong> • Placed: ${formatDate(o.created_at)}</small>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:1.25rem;font-weight:700;color:var(--primary)">${formatPrice(o.total)}</div>
+              <small style="color:var(--text-light)">Est. Delivery: ${o.estimated_delivery || '3-5 Business Days'}</small>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;background:var(--bg-secondary,#f8fafc);padding:1rem;border-radius:8px;margin-bottom:1rem">
+            <div>
+              <h4 style="margin:0 0 0.5rem 0;font-size:0.95rem;color:var(--text-light)">👤 Customer Info</h4>
+              <div style="font-weight:600">${o.shipping_name || o.customer_name}</div>
+              <div>📞 <a href="tel:${o.shipping_phone}" style="color:var(--primary);text-decoration:none">${o.shipping_phone}</a></div>
+              <small style="color:var(--text-light)">${o.customer_email || ''}</small>
+            </div>
+            <div>
+              <h4 style="margin:0 0 0.5rem 0;font-size:0.95rem;color:var(--text-light)">📍 Delivery Address</h4>
+              <div style="line-height:1.4">${o.shipping_address}</div>
+            </div>
+            <div>
+              <h4 style="margin:0 0 0.5rem 0;font-size:0.95rem;color:var(--text-light)">💊 Items (${o.items ? o.items.length : 0})</h4>
+              <div style="font-size:0.9rem;max-height:80px;overflow-y:auto">
+                ${o.items ? o.items.map(i => `<div>• ${i.medicine_name} ×${i.quantity} (${formatPrice(i.price)})</div>`).join('') : ''}
+              </div>
+            </div>
+          </div>
+
+          ${!o.delivery_person_id ? `
+            <div style="background:var(--card-bg);border:1px dashed var(--primary);padding:1rem;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+              <div>
+                <strong style="color:var(--primary)">Unassigned Order</strong> — Available for pickup and delivery.
+              </div>
+              <button class="btn btn-primary" onclick="claimOrder(${o.id})">🙋‍♂️ Accept & Claim Order</button>
+            </div>
+          ` : `
+            <!-- Live Status & Tracking Form -->
+            <form onsubmit="handleDeliveryUpdate(event, ${o.id})" style="background:var(--card-bg);border:1px solid var(--border-color,#e2e8f0);padding:1rem;border-radius:8px">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;align-items:end">
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.85rem;font-weight:600">Update Delivery Status</label>
+                  <select id="status-${o.id}" style="width:100%">
+                    <option value="pending" ${o.delivery_status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="processing" ${o.delivery_status === 'processing' ? 'selected' : ''}>Processing (Picked Up)</option>
+                    <option value="shipped" ${o.delivery_status === 'shipped' ? 'selected' : ''}>Shipped (In Transit)</option>
+                    <option value="out_for_delivery" ${o.delivery_status === 'out_for_delivery' ? 'selected' : ''}>Out For Delivery 🚚</option>
+                    <option value="delivered" ${o.delivery_status === 'delivered' ? 'selected' : ''}>Delivered ✅</option>
+                    <option value="cancelled" ${o.delivery_status === 'cancelled' ? 'selected' : ''}>Cancelled ❌</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.85rem;font-weight:600">Current Location / Status Note</label>
+                  <input type="text" id="location-${o.id}" value="${o.current_location || ''}" placeholder="e.g. En route to Dhanmondi, House 12">
+                </div>
+                <div style="display:flex;gap:0.5rem">
+                  <button type="submit" class="btn btn-primary" style="flex:1">Save Update</button>
+                  ${!isCompleted ? `<button type="button" class="btn btn-success" style="background:#2e7d32;color:#fff" onclick="quickMarkDelivered(${o.id})">Delivered ✅</button>` : ''}
+                </div>
+              </div>
+            </form>
+          `}
+        </div>
+      `;
+    }
+
+    async function claimOrder(orderId) {
+      if (!confirm(`Accept Order #${orderId} for delivery?`)) return;
+      const alertContainer = document.getElementById('delivery-alert-container');
+
+      try {
+        const res = await apiFetch(`/api/delivery/orders/${orderId}/claim`, { method: 'PUT' });
+        showAlert(alertContainer, res.message, 'success');
+        loadDeliveryData();
+      } catch (err) {
+        showAlert(alertContainer, err.message, 'danger');
+      }
+    }
+
+    async function handleDeliveryUpdate(e, orderId) {
+      e.preventDefault();
+      const status = document.getElementById(`status-${orderId}`).value;
+      const currentLocation = document.getElementById(`location-${orderId}`).value;
+      const alertContainer = document.getElementById('delivery-alert-container');
+
+      try {
+        const res = await apiFetch(`/api/delivery/orders/${orderId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            delivery_status: status,
+            current_location: currentLocation
+          })
+        });
+
+        showAlert(alertContainer, res.message || `Order #${orderId} updated successfully!`, 'success');
+        loadDeliveryData();
+      } catch (err) {
+        showAlert(alertContainer, err.message, 'danger');
+      }
+    }
+
+    async function quickMarkDelivered(orderId) {
+      if (!confirm(`Mark Order #${orderId} as Delivered?`)) return;
+      const alertContainer = document.getElementById('delivery-alert-container');
+
+      try {
+        const res = await apiFetch(`/api/delivery/orders/${orderId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            delivery_status: 'delivered',
+            current_location: 'Delivered to recipient'
+          })
+        });
+
+        showAlert(alertContainer, `Order #${orderId} marked as Delivered!`, 'success');
+        loadDeliveryData();
+      } catch (err) {
+        showAlert(alertContainer, err.message, 'danger');
+      }
+    }
+
+    function switchDeliveryFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(`tab-${filter}`).classList.add('active');
+      loadAssignedOrders();
+    }
+
+    function loadDeliveryData() {
+      loadDeliveryStats();
+      loadAssignedOrders();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateNav();
+      loadDeliveryData();
+    });
+  </script>
+  <script src="js/language-switcher.js"></script>
+</body>
+</html>

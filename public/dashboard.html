@@ -382,7 +382,7 @@
               </p>
 
               <div style="background:var(--bg);padding:1rem;border-radius:var(--radius-sm);border-left:4px solid ${deliveryStatusColors[o.delivery_status] || '#718096'}">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:0.75rem">
                   <div>
                     <p style="margin:0;font-size:0.85rem;color:var(--text-light)">📦 Tracking</p>
                     <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:0.9rem;word-break:break-all">${o.tracking_number || 'N/A'}</p>
@@ -390,6 +390,10 @@
                   <div>
                     <p style="margin:0;font-size:0.85rem;color:var(--text-light)">🚚 Status</p>
                     <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:0.9rem;color:${deliveryStatusColors[o.delivery_status] || '#718096'}">${deliveryStatusLabel[o.delivery_status] || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-light)">👤 Assigned Delivery</p>
+                    <p style="margin:0.25rem 0 0 0;font-weight:600;font-size:0.9rem;color:var(--primary)">${o.delivery_person_name ? `🚚 ${o.delivery_person_name}` : 'Pending Assignment'}</p>
                   </div>
                 </div>
 

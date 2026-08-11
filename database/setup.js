@@ -263,6 +263,16 @@ async function initDatabase() {
     console.log(`Admin account created: ${adminEmail}`);
   }
 
+  const deliveryEmail = process.env.DELIVERY_EMAIL || 'delivery@bdmedical.com';
+  const deliveryPassword = process.env.DELIVERY_PASSWORD || 'delivery123';
+  const existingDelivery = db.exec('SELECT id FROM users WHERE email = ?', [deliveryEmail]);
+  if (existingDelivery.length === 0 || existingDelivery[0].values.length === 0) {
+    const hash = bcrypt.hashSync(deliveryPassword, 10);
+    db.run('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', ['Delivery Man', deliveryEmail, hash, 'delivery_man']);
+    saveDb();
+    console.log(`Default Delivery Man account created: ${deliveryEmail}`);
+  }
+
   console.log('Database initialized successfully');
 }
 
@@ -368,6 +378,9 @@ function migrateDeliveryTracking(db) {
   }
   if (!names.includes('updated_at')) {
     db.run('ALTER TABLE orders ADD COLUMN updated_at DATETIME');
+  }
+  if (!names.includes('delivery_person_id')) {
+    db.run('ALTER TABLE orders ADD COLUMN delivery_person_id INTEGER');
   }
 }
 

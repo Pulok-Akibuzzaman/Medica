@@ -162,21 +162,26 @@
             body: JSON.stringify({ bloodGroup, allergies, disabilities, organDonor, chronicDiseases })
           });
 
-          if (data && data.message) {
-            showAlert(container, 'Medical information saved successfully!', 'success');
-            setTimeout(() => {
-              window.location.href = '/dashboard.html';
-            }, 1000);
-          } else {
-            showAlert(container, 'Medical information saved successfully!', 'success');
-            setTimeout(() => {
-              window.location.href = '/dashboard.html';
-            }, 1000);
+          if (data && data.user) {
+            const token = getToken();
+            setAuth(token, data.user);
           }
+
+          showAlert(container, 'Medical information saved successfully!', 'success');
+
+          setTimeout(() => {
+            const currentUser = getUser();
+            if (currentUser && currentUser.role === 'delivery_man') {
+              window.location.href = '/delivery.html';
+            } else {
+              window.location.href = '/dashboard.html';
+            }
+          }, 800);
         } catch (err) {
+          console.error('Failed to save medical info:', err);
           submitBtn.disabled = false;
           submitBtn.textContent = 'Save Medical Info';
-          showAlert(container, err.message || 'Failed to save medical information');
+          showAlert(container, err.message || 'Failed to save medical information. Please try again.', 'danger');
         }
       });
     }

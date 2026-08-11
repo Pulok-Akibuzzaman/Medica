@@ -79,6 +79,13 @@
             </button>
           </div>
         </div>
+        <div class="form-group">
+          <label for="role">Account Type</label>
+          <select id="role">
+            <option value="user">Customer</option>
+            <option value="delivery_man">Delivery Person 🚚</option>
+          </select>
+        </div>
 
         <button type="submit" class="btn btn-primary btn-block" data-i18n="register_create_btn">Create Account</button>
       </form>
@@ -96,6 +103,7 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const confirm = document.getElementById('confirm-password').value;
+      const role = document.getElementById('role').value;
       const container = document.getElementById('alert-container');
 
       if (password !== confirm) {
@@ -106,10 +114,14 @@
       try {
         const data = await apiFetch('/api/auth/register', {
           method: 'POST',
-          body: JSON.stringify({ name, email, password })
+          body: JSON.stringify({ name, email, password, role })
         });
         setAuth(data.token, data.user);
-        window.location.href = '/medical-profile.html';
+        if (data.user.role === 'delivery_man') {
+          window.location.href = '/delivery.html';
+        } else {
+          window.location.href = '/medical-profile.html';
+        }
       } catch (err) {
         showAlert(container, err.message);
       }

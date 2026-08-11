@@ -77,6 +77,31 @@ function updateNav() {
       if (user.role === 'admin') adminLink.classList.remove('hidden');
       else adminLink.classList.add('hidden');
     }
+
+    const navLinks = document.getElementById('nav-links');
+    if (navLinks) {
+      let deliveryLink = document.getElementById('delivery-link') || document.getElementById('delivery-nav-item');
+      const isDeliveryUser = user.role === 'delivery_man' || user.role === 'admin';
+
+      if (isDeliveryUser) {
+        if (!deliveryLink) {
+          deliveryLink = document.createElement('li');
+          deliveryLink.id = 'delivery-link';
+          const isActive = window.location.pathname.endsWith('delivery.html') ? 'class="active"' : '';
+          deliveryLink.innerHTML = `<a href="delivery.html" ${isActive} data-i18n="nav_delivery">🚚 Delivery Portal</a>`;
+          if (adminLink) {
+            navLinks.insertBefore(deliveryLink, adminLink);
+          } else {
+            navLinks.appendChild(deliveryLink);
+          }
+        } else {
+          deliveryLink.classList.remove('hidden');
+        }
+      } else if (deliveryLink) {
+        deliveryLink.classList.add('hidden');
+      }
+    }
+
     if (!document.getElementById('cart-link')) {
       const cart = document.createElement('a');
       cart.id = 'cart-link';
@@ -103,6 +128,7 @@ function initNavTranslations() {
     { href: 'diseases.html', key: 'nav_diseases' },
     { href: 'investigations.html', key: 'nav_investigations' },
     { href: 'chatbot.html', key: 'nav_assistant' },
+    { href: 'delivery.html', key: 'nav_delivery' },
     { href: 'admin.html', key: 'nav_admin' }
   ];
 

@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 2000,
   message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
@@ -39,6 +39,7 @@ async function start() {
   app.use('/api/investigations', require('./routes/investigations'));
   app.use('/api/cart', require('./routes/cart'));
   app.use('/api/orders', require('./routes/orders'));
+  app.use('/api/delivery', require('./routes/delivery'));
   app.use('/api/reminders', require('./routes/reminders'));
   app.use('/api/appointments', require('./routes/appointments'));
   app.use('/api/recommendations', require('./routes/recommendations'));
