@@ -45,7 +45,7 @@ async function getDb() {
 }
 
 async function initDatabase() {
-  const db = await getDb();
+  db = await getDb();
 
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -509,7 +509,6 @@ function migrateDeliveryTracking(db) {
 function runQuery(sql, params = []) {
   if (!db) throw new Error('Database not initialized');
   db.run(sql, params);
-  saveDb();
 }
 
 function getOne(sql, params = []) {
