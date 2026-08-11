@@ -126,11 +126,14 @@ async function importDoctors() {
   db.run('COMMIT');
   saveDb();
 
-  console.log(`Imported ${imported} doctor(s). Skipped ${skipped} row(s) missing a name/specialty, ${duplicates} exact duplicate(s).`);
-  process.exit(0);
+  console.log(`Imported ${imported} doctor(s). Skipped ${skippedExisting} existing, ${skippedInvalid} invalid.`);
 }
 
-importDoctors().catch(err => {
-  console.error('Import failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  importDoctors().then(() => setTimeout(() => process.exit(0), 100)).catch(err => {
+    console.error('Import failed:', err);
+    setTimeout(() => process.exit(1), 100);
+  });
+}
+
+module.exports = { importDoctors };

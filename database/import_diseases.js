@@ -136,10 +136,13 @@ async function importDiseases() {
   saveDb();
 
   console.log(`Imported ${imported} disease(s). Skipped ${skippedExisting} that already existed by exact name match.`);
-  process.exit(0);
 }
 
-importDiseases().catch(err => {
-  console.error('Import failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  importDiseases().then(() => setTimeout(() => process.exit(0), 100)).catch(err => {
+    console.error('Import failed:', err);
+    setTimeout(() => process.exit(1), 100);
+  });
+}
+
+module.exports = { importDiseases };

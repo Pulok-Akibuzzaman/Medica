@@ -178,10 +178,13 @@ async function importMedicines() {
   saveDb();
 
   console.log(`Imported ${imported} medicine(s). Skipped ${skipped} row(s) missing a brand/generic name.`);
-  process.exit(0);
 }
 
-importMedicines().catch(err => {
-  console.error('Import failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  importMedicines().then(() => setTimeout(() => process.exit(0), 100)).catch(err => {
+    console.error('Import failed:', err);
+    setTimeout(() => process.exit(1), 100);
+  });
+}
+
+module.exports = { importMedicines };
