@@ -126,7 +126,7 @@ async function importDoctors() {
   db.run('COMMIT');
   saveDb();
 
-  console.log(`Imported ${imported} doctor(s). Skipped ${skippedExisting} existing, ${skippedInvalid} invalid.`);
+  console.log(`Imported ${imported} doctor(s). Skipped ${skipped} missing name/specialty, ${duplicates} duplicate(s).`);
 }
 
 if (require.main === module) {
