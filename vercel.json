@@ -1,16 +1,22 @@
 {
   "version": 2,
-  "outputDirectory": "public",
+  "framework": null,
+  "buildCommand": null,
   "cleanUrls": true,
-  "headers": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
-      ]
+      "src": "public/**/*",
+      "use": "@vercel/static"
     }
   ],
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://medica-api.onrender.com/api/$1" }
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://medica-api.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
   ]
 }
