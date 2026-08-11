@@ -142,11 +142,13 @@ async function seed() {
     console.log('Database already has seed data — no new records inserted.');
   }
   console.log(`Total: ${totalMeds.c} medicines, ${totalDocs.c} doctors, ${totalDiseases.c} diseases, ${totalGuidelines.c} guidelines, ${totalInvestigations.c} investigation centers.`);
-
-  setTimeout(() => process.exit(0), 100);
 }
 
-seed().catch(err => {
-  console.error('Seed failed:', err);
-  setTimeout(() => process.exit(1), 100);
-});
+if (require.main === module) {
+  seed().then(() => setTimeout(() => process.exit(0), 100)).catch(err => {
+    console.error('Seed failed:', err);
+    setTimeout(() => process.exit(1), 100);
+  });
+}
+
+module.exports = { seed };

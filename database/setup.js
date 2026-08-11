@@ -281,6 +281,17 @@ async function initDatabase() {
     console.log(`Default Delivery Man account created: ${deliveryEmail}`);
   }
 
+  const medCheck = db.exec('SELECT COUNT(*) FROM medicines');
+  const medCount = (medCheck.length > 0 && medCheck[0].values.length > 0) ? medCheck[0].values[0][0] : 0;
+  if (medCount === 0) {
+    try {
+      const { seed } = require('./seed');
+      await seed();
+    } catch (err) {
+      console.error('Auto-seed warning:', err);
+    }
+  }
+
   console.log('Database initialized successfully');
 }
 
