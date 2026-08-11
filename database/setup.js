@@ -3,12 +3,20 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(__dirname, 'medical.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'medical.db');
 let db = null;
 let SQL = null;
 
+function ensureDbDirectoryExists() {
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
 function saveDb() {
   if (db) {
+    ensureDbDirectoryExists();
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
@@ -387,6 +395,7 @@ function migrateDeliveryTracking(db) {
 function runQuery(sql, params = []) {
   if (!db) throw new Error('Database not initialized');
   db.run(sql, params);
+  saveDb();
 }
 
 function getOne(sql, params = []) {
