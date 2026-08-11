@@ -30,8 +30,13 @@ async function getDb() {
     SQL = await initSqlJs();
   }
 
-  if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
+  const defaultPath = path.join(__dirname, 'medical.db');
+  const targetPath = (process.env.DB_PATH && fs.existsSync(process.env.DB_PATH)) 
+    ? process.env.DB_PATH 
+    : defaultPath;
+
+  if (fs.existsSync(targetPath)) {
+    const fileBuffer = fs.readFileSync(targetPath);
     db = new SQL.Database(fileBuffer);
   } else {
     db = new SQL.Database();
