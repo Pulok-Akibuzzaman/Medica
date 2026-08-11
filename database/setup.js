@@ -284,15 +284,101 @@ async function initDatabase() {
   const medCheck = db.exec('SELECT COUNT(*) FROM medicines');
   const medCount = (medCheck.length > 0 && medCheck[0].values.length > 0) ? medCheck[0].values[0][0] : 0;
   if (medCount === 0) {
-    try {
-      const { seed } = require('./seed');
-      await seed();
-    } catch (err) {
-      console.error('Auto-seed warning:', err);
-    }
+    seedDefaultData(db);
   }
 
   console.log('Database initialized successfully');
+}
+
+function seedDefaultData(db) {
+  const medicines = [
+    { name: 'Napa', generic_name: 'Paracetamol (Acetaminophen)', uses: 'Relief of mild to moderate pain including headache, toothache, muscle pain, and reduction of fever.', dosage: 'Adults: 500mg-1000mg every 4-6 hours. Maximum 4g per day.', side_effects: 'Nausea, allergic reactions (rare).', warnings: 'Do not exceed recommended dose.', category: 'Pain Relief', price: 12.00, stock: 100 },
+    { name: 'Seclo', generic_name: 'Omeprazole', uses: 'Treatment of gastric and duodenal ulcers, GERD.', dosage: 'Adults: 20mg once daily before breakfast for 4-8 weeks.', side_effects: 'Headache, nausea, diarrhea, abdominal pain.', warnings: 'Long-term use may cause vitamin B12 deficiency.', category: 'Gastric', price: 60.00, stock: 100 },
+    { name: 'Azimax', generic_name: 'Azithromycin', uses: 'Treatment of respiratory tract infections, skin infections, ear infections.', dosage: 'Adults: 500mg daily for 3-5 days.', side_effects: 'Diarrhea, nausea, abdominal pain.', warnings: 'Complete full course of antibiotics.', category: 'Antibiotic', price: 175.00, stock: 100 },
+    { name: 'Losectil', generic_name: 'Esomeprazole', uses: 'Treatment of GERD and peptic ulcer disease.', dosage: 'Adults: 20-40mg once daily.', side_effects: 'Headache, diarrhea, nausea.', warnings: 'Use lowest effective dose.', category: 'Gastric', price: 70.00, stock: 100 },
+    { name: 'Ace Plus', generic_name: 'Paracetamol + Caffeine', uses: 'Relief of headache, migraine, muscle pain.', dosage: 'Adults: 1-2 tablets every 4-6 hours as needed.', side_effects: 'Insomnia, nervousness, nausea.', warnings: 'Contains caffeine.', category: 'Pain Relief', price: 30.00, stock: 100 },
+    { name: 'Sergel', generic_name: 'Esomeprazole', uses: 'Treatment of acid reflux, GERD, peptic ulcer.', dosage: 'Adults: 20-40mg once daily before meal.', side_effects: 'Headache, abdominal pain, diarrhea.', warnings: 'Monitor magnesium levels.', category: 'Gastric', price: 70.00, stock: 100 },
+    { name: 'Zimax', generic_name: 'Azithromycin', uses: 'Bacterial infections of the lungs, sinuses, throat.', dosage: 'Adults: 500mg once daily for 3 days.', side_effects: 'Stomach upset, diarrhea.', warnings: 'Take 1 hour before or 2 hours after meals.', category: 'Antibiotic', price: 180.00, stock: 100 },
+    { name: 'Monas', generic_name: 'Montelukast', uses: 'Prevention and long-term treatment of asthma and allergic rhinitis.', dosage: 'Adults: 10mg once daily in the evening.', side_effects: 'Headache, abdominal pain.', warnings: 'Not for acute asthma attacks.', category: 'Respiratory', price: 160.00, stock: 100 },
+    { name: 'Fenobid', generic_name: 'Fenofibrate', uses: 'Treatment of high cholesterol and triglycerides.', dosage: 'Adults: 160mg once daily with food.', side_effects: 'Stomach pain, nausea.', warnings: 'Monitor liver function tests.', category: 'Cardiovascular', price: 120.00, stock: 100 },
+    { name: 'Losartan', generic_name: 'Losartan Potassium', uses: 'Treatment of hypertension and diabetic nephropathy.', dosage: 'Adults: Start 50mg once daily.', side_effects: 'Dizziness, fatigue, hypotension.', warnings: 'Do not use during pregnancy.', category: 'Cardiovascular', price: 90.00, stock: 100 },
+    { name: 'Ciprocin', generic_name: 'Ciprofloxacin', uses: 'Treatment of urinary tract infections, respiratory infections.', dosage: 'Adults: 250-750mg twice daily.', side_effects: 'Nausea, diarrhea, dizziness.', warnings: 'May cause tendon rupture.', category: 'Antibiotic', price: 140.00, stock: 100 },
+    { name: 'Algin', generic_name: 'Antacid (Alginate)', uses: 'Relief of heartburn and acid indigestion.', dosage: 'Adults: 10-20ml after meals and at bedtime.', side_effects: 'Constipation, bloating.', warnings: 'Contains sodium.', category: 'Gastric', price: 85.00, stock: 100 },
+    { name: 'Amoxil', generic_name: 'Amoxicillin', uses: 'Treatment of bacterial infections including ear, nose, throat.', dosage: 'Adults: 250-500mg every 8 hours.', side_effects: 'Diarrhea, nausea, skin rash.', warnings: 'Inform doctor of penicillin allergy.', category: 'Antibiotic', price: 50.00, stock: 100 },
+    { name: 'Amlodipine', generic_name: 'Amlodipine Besylate', uses: 'Treatment of high blood pressure and chest pain.', dosage: 'Adults: Start 5mg once daily.', side_effects: 'Edema, headache, fatigue.', warnings: 'Monitor blood pressure regularly.', category: 'Cardiovascular', price: 45.00, stock: 100 },
+    { name: 'Histacin', generic_name: 'Chlorpheniramine Maleate', uses: 'Relief of allergic rhinitis and hay fever.', dosage: 'Adults: 4mg every 4-6 hours.', side_effects: 'Drowsiness, dry mouth.', warnings: 'Causes drowsiness - avoid driving.', category: 'Allergy', price: 15.00, stock: 100 },
+    { name: 'Metformin', generic_name: 'Metformin Hydrochloride', uses: 'Treatment for type 2 diabetes mellitus.', dosage: 'Adults: Start 500mg twice daily with meals.', side_effects: 'Nausea, diarrhea, stomach pain.', warnings: 'Monitor kidney function.', category: 'Diabetes', price: 55.00, stock: 100 },
+    { name: 'Orcef', generic_name: 'Cefixime', uses: 'Treatment of gonorrhea, tonsillitis, urinary tract infections.', dosage: 'Adults: 400mg daily as single dose.', side_effects: 'Diarrhea, nausea, headache.', warnings: 'Inform doctor of cephalosporin allergy.', category: 'Antibiotic', price: 210.00, stock: 100 },
+    { name: 'Calcium-D', generic_name: 'Calcium Carbonate + Vitamin D3', uses: 'Prevention and treatment of calcium deficiency.', dosage: 'Adults: 1-2 tablets daily with meals.', side_effects: 'Constipation, bloating.', warnings: 'Do not exceed recommended dose.', category: 'Vitamins', price: 95.00, stock: 100 }
+  ];
+
+  for (const m of medicines) {
+    db.run(
+      'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [m.name, m.generic_name, m.uses, m.dosage, m.side_effects, m.warnings, m.category, m.price, m.stock]
+    );
+  }
+
+  const doctors = [
+    { name: 'Dr. Mohammad Rafiqul Islam', hospital: 'Dhaka Medical College Hospital', specialty: 'Cardiology', location: 'Dhaka', contact: '+880-2-55165001', email: 'rafiqul.islam@dmch.gov.bd' },
+    { name: 'Dr. Fatema Khatun', hospital: 'Square Hospital', specialty: 'Neurology', location: 'Dhaka', contact: '+880-2-8159457', email: 'fatema.k@squarehospital.com' },
+    { name: 'Dr. Abdul Karim Sarker', hospital: 'Chittagong Medical College Hospital', specialty: 'Orthopedics', location: 'Chittagong', contact: '+880-31-630335', email: 'karim.sarker@cmch.gov.bd' },
+    { name: 'Dr. Nasreen Sultana', hospital: 'United Hospital', specialty: 'Gynecology', location: 'Dhaka', contact: '+880-2-8431661', email: 'nasreen.s@uhlbd.com' },
+    { name: 'Dr. Md. Shahinul Alam', hospital: 'Bangabandhu Sheikh Mujib Medical University', specialty: 'Gastroenterology', location: 'Dhaka', contact: '+880-2-8614001', email: 'shahinul@bsmmu.edu.bd' },
+    { name: 'Dr. Tahmina Begum', hospital: 'Evercare Hospital', specialty: 'Pediatrics', location: 'Dhaka', contact: '+880-2-8431661', email: 'tahmina.b@evercarebd.com' },
+    { name: 'Dr. Rezaul Haque', hospital: 'Rajshahi Medical College Hospital', specialty: 'Dermatology', location: 'Rajshahi', contact: '+880-721-772150', email: 'rezaul.h@rmch.gov.bd' },
+    { name: 'Dr. Sharmin Akhter', hospital: 'Ibn Sina Hospital', specialty: 'Ophthalmology', location: 'Dhaka', contact: '+880-2-9116551', email: 'sharmin.a@ibnsinabd.com' },
+    { name: 'Dr. Kamrul Hassan', hospital: 'Sylhet MAG Osmani Medical College', specialty: 'ENT', location: 'Sylhet', contact: '+880-821-716981', email: 'kamrul.h@somch.gov.bd' },
+    { name: 'Dr. Salma Rahman', hospital: 'Popular Medical College Hospital', specialty: 'Endocrinology', location: 'Dhaka', contact: '+880-2-9116551', email: 'salma.r@popularbd.com' }
+  ];
+
+  for (const d of doctors) {
+    db.run(
+      'INSERT INTO doctors (name, hospital, specialty, location, contact, email, rating, review_count, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, 4.8, 12, 500)',
+      [d.name, d.hospital, d.specialty, d.location, d.contact, d.email]
+    );
+  }
+
+  const diseases = [
+    { name: 'Diabetes Mellitus', category: 'Endocrine', overview: 'Chronic disease affecting blood glucose regulation.', causes: 'Genetic factors, obesity, sedentary lifestyle.', symptoms: 'Increased thirst, frequent urination, fatigue, blurred vision.', risk_factors: 'Family history, age, obesity.', diagnosis: 'Fasting blood glucose, HbA1c.', treatment: 'Lifestyle modifications, metformin, insulin.', prevention: 'Healthy diet, regular exercise.', related_specialties: 'Endocrinology, Internal Medicine' },
+    { name: 'Hypertension', category: 'Cardiovascular', overview: 'Elevated blood pressure affecting cardiovascular health.', causes: 'Obesity, excessive sodium, stress.', symptoms: 'Headaches, dizziness, chest pain.', risk_factors: 'Age, obesity, sedentary lifestyle.', diagnosis: 'Blood pressure measurement, ECG.', treatment: 'Lifestyle changes, antihypertensives.', prevention: 'Reduce sodium intake, regular exercise.', related_specialties: 'Cardiology, Internal Medicine' },
+    { name: 'Asthma', category: 'Respiratory', overview: 'Chronic inflammatory disease of airways.', causes: 'Allergies, air pollution, respiratory infections.', symptoms: 'Wheezing, shortness of breath, coughing.', risk_factors: 'Family history, allergies.', diagnosis: 'Spirometry, peak flow measurement.', treatment: 'Inhalers, corticosteroids.', prevention: 'Avoid triggers, maintain healthy weight.', related_specialties: 'Pulmonology, Internal Medicine' },
+    { name: 'GERD', category: 'Gastric', overview: 'Chronic acid reflux disease.', causes: 'Weak lower esophageal sphincter, obesity.', symptoms: 'Heartburn, regurgitation, chest pain.', risk_factors: 'Obesity, smoking, alcohol.', diagnosis: 'Endoscopy, pH monitoring.', treatment: 'Proton pump inhibitors, antacids.', prevention: 'Avoid trigger foods, smaller meals.', related_specialties: 'Gastroenterology, Internal Medicine' }
+  ];
+
+  for (const dis of diseases) {
+    db.run(
+      'INSERT INTO diseases (name, category, overview, causes, symptoms, risk_factors, diagnosis, treatment, prevention, related_specialties) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [dis.name, dis.category, dis.overview, dis.causes, dis.symptoms, dis.risk_factors, dis.diagnosis, dis.treatment, dis.prevention, dis.related_specialties]
+    );
+  }
+
+  const guidelines = [
+    { title: 'Management of Hypertension in Adults', description: 'Evidence-based guidelines for screening, diagnosis, and treatment of hypertension.', type: 'national', category: 'Cardiovascular', authority: 'BMDC', publication_date: '2020-01-15', link: 'https://bmdc.org.bd' },
+    { title: 'Diabetes Prevention and Management', description: 'Comprehensive guidelines for prevention and management of diabetes.', type: 'international', category: 'Endocrine', authority: 'WHO', publication_date: '2021-06-10', link: 'https://who.int' }
+  ];
+
+  for (const g of guidelines) {
+    db.run(
+      'INSERT INTO guidelines (title, description, type, category, authority, publication_date, link) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [g.title, g.description, g.type, g.category, g.authority, g.publication_date, g.link]
+    );
+  }
+
+  const investigations = [
+    { name: 'Dhaka Diagnostic Center', location: 'Dhanmondi', address: '456 Satmasjid Road, Dhanmondi, Dhaka', available_tests: 'Blood tests, ECG, Ultrasound, CT scan, MRI, X-ray', contact: '+880-2-9666999', opening_hours: 'Monday-Sunday: 8 AM - 8 PM' },
+    { name: 'LabCare Bangladesh', location: 'Gulshan', address: '78 Gulshan Avenue, Gulshan 2, Dhaka', available_tests: 'Complete blood count, Biochemistry, Hormone tests', contact: '+880-2-9858585', opening_hours: 'Monday-Sunday: 7 AM - 9 PM' }
+  ];
+
+  for (const inv of investigations) {
+    db.run(
+      'INSERT INTO investigation_centers (name, location, address, available_tests, contact, opening_hours) VALUES (?, ?, ?, ?, ?, ?)',
+      [inv.name, inv.location, inv.address, inv.available_tests, inv.contact, inv.opening_hours]
+    );
+  }
+
+  saveDb();
+  console.log('Seeded default medicines, doctors, diseases, guidelines, and investigation centers successfully!');
 }
 
 // Add medical info columns to users table for existing databases
