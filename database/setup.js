@@ -291,6 +291,23 @@ async function initDatabase() {
 }
 
 function seedDefaultData(db) {
+  const medCSV = path.join(__dirname, 'medicine.csv');
+  if (fs.existsSync(medCSV)) {
+    try {
+      console.log('Full CSV dataset files detected! Loading full dataset into database...');
+      const { importMedicines } = require('./import_medicines');
+      const { importDoctors } = require('./import_doctors');
+      const { importDiseases } = require('./import_diseases');
+      importMedicines(db);
+      importDoctors(db);
+      importDiseases(db);
+      console.log('Full CSV dataset loaded into database successfully!');
+      return;
+    } catch (err) {
+      console.error('CSV import fallback error:', err);
+    }
+  }
+
   const medicines = [
     { name: 'Napa', generic_name: 'Paracetamol (Acetaminophen)', uses: 'Relief of mild to moderate pain including headache, toothache, muscle pain, and reduction of fever.', dosage: 'Adults: 500mg-1000mg every 4-6 hours. Maximum 4g per day.', side_effects: 'Nausea, allergic reactions (rare).', warnings: 'Do not exceed recommended dose.', category: 'Pain Relief', price: 12.00, stock: 100 },
     { name: 'Seclo', generic_name: 'Omeprazole', uses: 'Treatment of gastric and duodenal ulcers, GERD.', dosage: 'Adults: 20mg once daily before breakfast for 4-8 weeks.', side_effects: 'Headache, nausea, diarrhea, abdominal pain.', warnings: 'Long-term use may cause vitamin B12 deficiency.', category: 'Gastric', price: 60.00, stock: 100 },

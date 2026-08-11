@@ -104,12 +104,10 @@ function extractPrice(packageContainer) {
   return Number.isFinite(value) ? value : 0;
 }
 
-async function importMedicines() {
-  await initDatabase();
-
+function importMedicines(targetDb) {
   if (!fs.existsSync(MEDICINE_CSV) || !fs.existsSync(GENERIC_CSV)) {
     console.error('medicine.csv and/or generic.csv not found in database/');
-    process.exit(1);
+    return 0;
   }
 
   console.log('Reading generic.csv...');
@@ -125,10 +123,10 @@ async function importMedicines() {
   const brands = readCSV(MEDICINE_CSV);
   console.log(`Loaded ${brands.length} brand medicines.`);
 
-  const db = await getDb();
+  const db = targetDb;
 
-  runQuery('DELETE FROM cart_items');
-  runQuery('DELETE FROM medicines');
+  db.run('DELETE FROM cart_items');
+  db.run('DELETE FROM medicines');
 
   db.run('BEGIN TRANSACTION');
 
@@ -141,50 +139,45 @@ async function importMedicines() {
     if (!name || !genericName) { skipped++; continue; }
 
     const g = genericsByName.get(genericName.toLowerCase()) || {};
-
     const category = (g['drug class'] || '').trim() || 'General';
-
-    const indicationText = [g['indication'], stripHtml(g['indication description'])]
-      .filter(Boolean).join(' — ');
+    const indicationText = [g['indication'], stripHtml(g['indication description'])].filter(Boolean).join(' — ');
     const uses = truncate(indicationText, 700) || 'Consult product literature for indications.';
-
     const dosageForm = (brand['dosage form'] || '').trim();
     const strength = (brand['strength'] || '').trim();
     const dosageHeader = [dosageForm, strength].filter(Boolean).join(', ');
     const dosageBody = truncate(stripHtml(g['dosage description']), 600);
     const dosage = [dosageHeader, dosageBody].filter(Boolean).join('\n') || 'As directed by a physician.';
+    const sideEffects = truncate(stripHtml(g['side effects description']), 700) || 'Not commonly reported; consult a physician.';
+    const warningsParts = [stripHtml(g['contraindications description']), stripHtml(g['precautions description'])].filter(Boolean);
+    const warnings = truncate(warningsParts.join('\n'), 900) || 'No specific warnings listed; use as directed by a physician.';
+    const price = extractPrice(brand['package container']) || 20.00;
 
-    const sideEffects = truncate(stripHtml(g['side effects description']), 700)
-      || 'Not commonly reported; consult a physician.';
-
-    const warningsParts = [
-      stripHtml(g['contraindications description']),
-      stripHtml(g['precautions description']),
-    ].filter(Boolean);
-    const warnings = truncate(warningsParts.join('\n'), 900)
-      || 'No specific warnings listed; use as directed by a physician.';
-
-    const price = extractPrice(brand['package container']);
-
-    runQuery(
+    db.run(
       'INSERT INTO medicines (name, generic_name, uses, dosage, side_effects, warnings, category, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [name, genericName, uses, dosage, sideEffects, warnings, category, price, 100]
     );
     imported++;
-    if (imported % 5000 === 0) console.log(`  imported ${imported}...`);
+    if (imported % 5000 === 0) console.log(`  imported ${imported} medicines...`);
   }
 
   db.run('COMMIT');
   saveDb();
 
-  console.log(`Imported ${imported} medicine(s). Skipped ${skipped} row(s) missing a brand/generic name.`);
+  console.log(`Imported ${imported} medicine(s) from CSV dataset.`);
+  return imported;
 }
 
 if (require.main === module) {
-  importMedicines().then(() => setTimeout(() => process.exit(0), 100)).catch(err => {
+  try {
+    const { getDb } = require('./setup');
+    getDb().then(db => {
+      importMedicines(db);
+      setTimeout(() => process.exit(0), 100);
+    });
+  } catch (err) {
     console.error('Import failed:', err);
     setTimeout(() => process.exit(1), 100);
-  });
+  }
 }
 
 module.exports = { importMedicines };
